@@ -27,6 +27,7 @@ const DEFAULT_HABITS = [
   { name: 'No doom scrolling', auto_type: null, order_index: 7 },
   { name: 'Read / learning', auto_type: null, order_index: 8 },
   { name: 'Morning routine', auto_type: null, order_index: 9 },
+  { name: 'Tidy room', auto_type: null, order_index: 10 },
 ];
 
 const SETUP_SQL = `-- Productivity Dashboard — Supabase Setup SQL
@@ -1401,10 +1402,17 @@ function renderWeekDigest() {
 
 function getHabitStreak(habitId) {
   const today = todayStr();
-  const todayLog = state.habitLogs.find(l => l.habit_id === habitId && l.date === today);
-  let d = (todayLog && todayLog.completed) ? today : addDays(today, -1);
+  const todayDow = new Date(today + 'T00:00:00').getDay();
+  // Skip back to last weekday if today is weekend
+  let startDay = today;
+  if (todayDow === 6) startDay = addDays(today, -1);      // Sat → Fri
+  else if (todayDow === 0) startDay = addDays(today, -2); // Sun → Fri
+  const startLog = state.habitLogs.find(l => l.habit_id === habitId && l.date === startDay);
+  let d = (startLog && startLog.completed) ? startDay : addDays(startDay, -1);
   let streak = 0;
   for (let i = 0; i < 365; i++) {
+    const dow = new Date(d + 'T00:00:00').getDay();
+    if (dow === 0 || dow === 6) { d = addDays(d, -1); continue; } // skip weekends
     const log = state.habitLogs.find(l => l.habit_id === habitId && l.date === d);
     if (log && log.completed) { streak++; d = addDays(d, -1); }
     else break;

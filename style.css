@@ -1091,7 +1091,9 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .entry-grid { grid-template-columns: repeat(2, 1fr); }
 
+  .habit-name-col { width: 110px; }
   .habit-row-name { width: 110px; font-size: 0.8rem; }
+  .habit-name-text { max-width: 68px; }
   .check-btn { width: 26px; height: 26px; }
   .month-week-row { grid-template-columns: 90px 1fr 36px; gap: 8px; }
   .week-dates { display: none; }
@@ -1294,6 +1296,8 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 @media (max-width: 400px) {
   .stats-row { grid-template-columns: 1fr 1fr; }
   .entry-grid { grid-template-columns: 1fr 1fr; }
+  .habit-name-col { width: 90px; }
   .habit-row-name { width: 90px; font-size: 0.75rem; }
+  .habit-name-text { max-width: 55px; }
   .check-btn { width: 22px; height: 22px; font-size: 0.65rem; }
 }

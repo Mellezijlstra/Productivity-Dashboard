@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dashboard">
+  <title>Productivity Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== SETUP SCREEN ===== -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <div class="setup-logo">⚡</div>
+      <h1>Dashboard Setup</h1>
+      <p class="setup-subtitle">Connect a free Supabase database to sync across all your devices.</p>
+
+      <div class="setup-steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <p>Go to <strong>supabase.com</strong> → New Project (free tier)</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <p>Open the <strong>SQL Editor</strong> and run the setup SQL below</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <p>Go to <strong>Project Settings → API</strong> and paste your URL and anon key below</p>
+        </div>
+      </div>
+
+      <div class="sql-block">
+        <div class="sql-block-header">
+          <span>Setup SQL</span>
+          <button class="btn-copy" onclick="copySetupSQL()">Copy</button>
+        </div>
+        <pre id="setup-sql-preview" class="sql-preview">Loading...</pre>
+      </div>
+
+      <div class="form-group">
+        <label>Supabase Project URL</label>
+        <input type="url" id="setup-url" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Supabase Anon Key</label>
+        <input type="text" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIs..." autocomplete="off">
+      </div>
+
+      <button class="btn-primary btn-full" onclick="initializeApp()">Connect & Launch</button>
+      <p class="setup-note">Credentials are stored locally on this device only.</p>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app" class="hidden">
+
+    <!-- Sidebar (desktop) -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Dashboard</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-section="home" onclick="navigate('home')">
+          <span class="nav-icon">🏠</span>
+          <span>Home</span>
+        </button>
+        <button class="nav-btn" data-section="ai" onclick="navigate('ai')">
+          <span class="nav-icon">🧠</span>
+          <span>AI Learning</span>
+        </button>
+        <button class="nav-btn" data-section="fitness" onclick="navigate('fitness')">
+          <span class="nav-icon">💪</span>
+          <span>Cut Tracker</span>
+        </button>
+        <button class="nav-btn" data-section="habits" onclick="navigate('habits')">
+          <span class="nav-icon">✅</span>
+          <span>Habits</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-date" id="sidebar-date"></div>
+        <button class="btn-ghost btn-sm" onclick="resetSetup()">⚙ Settings</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+      <!-- ===== HOME SECTION ===== -->
+      <section id="home-section" class="section">
+
+        <div class="home-header">
+          <div>
+            <h1 id="home-greeting" class="home-greeting-text">Good morning</h1>
+            <p id="home-date" class="home-date-text"></p>
+          </div>
+          <div id="home-phase-mini"></div>
+        </div>
+
+        <div class="digest-label">Today</div>
+        <div class="card today-digest-card">
+          <div id="today-digest" class="today-digest-grid"></div>
+        </div>
+
+        <div class="digest-label">This Week</div>
+        <div id="week-digest" class="week-digest-grid"></div>
+
+      </section>
+
+      <!-- ===== AI SECTION ===== -->
+      <section id="ai-section" class="section hidden">
+
+        <!-- Study Timer -->
+        <div class="card timer-card">
+          <div class="timer-top">
+            <div>
+              <div class="timer-display" id="timer-display">0:00</div>
+              <div class="timer-status" id="timer-status">Ready to study</div>
+            </div>
+            <div class="timer-controls">
+              <select id="timer-course-select" class="select-sm timer-select"></select>
+              <button class="btn-primary btn-sm" id="timer-start-btn" onclick="toggleTimer()">▶ Start</button>
+              <button class="btn-secondary btn-sm" id="timer-stop-btn" onclick="stopAndLogTimer()" disabled>■ Log</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase Banner -->
+        <div id="phase-banner" class="phase-banner grind">
+          <div class="phase-left">
+            <div class="phase-label" id="phase-label">GRIND MODE</div>
+            <div class="phase-desc" id="phase-desc">Loading...</div>
+          </div>
+          <div class="phase-right" id="phase-countdown"></div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+          <div class="stat-card stat-ai">
+            <div class="stat-value" id="ai-hours-total">0h</div>
+            <div class="stat-label">Total Study</div>
+          </div>
+          <div class="stat-card stat-ai">
+            <div class="stat-value" id="ai-courses-done">0/8</div>
+            <div class="stat-label">Courses Done</div>
+          </div>
+          <div class="stat-card stat-ai">
+            <div class="stat-value" id="ai-streak">0</div>
+            <div class="stat-label">Day Streak</div>
+          </div>
+        </div>
+
+        <!-- Section Header -->
+        <div class="section-header">
+          <h2 class="section-title ai-title">Courses</h2>
+          <button class="btn-secondary btn-sm" onclick="openLogStudyModal()">+ Log Study</button>
+        </div>
+
+        <!-- Course Grid -->
+        <div id="course-grid" class="course-grid">
+          <div class="loading-state">Loading courses...</div>
+        </div>
+
+      </section>
+
+      <!-- ===== FITNESS SECTION ===== -->
+      <section id="fitness-section" class="section hidden">
+
+        <!-- Today's Entry -->
+        <div class="entry-card card">
+          <div class="entry-card-header">
+            <h3>Log Entry</h3>
+            <input type="date" id="entry-date" class="date-picker-sm" onchange="prefillEntryForDate(this.value)">
+          </div>
+          <div class="entry-grid">
+            <div class="entry-field">
+              <label>Weight (kg)</label>
+              <input type="number" id="entry-weight" placeholder="80.3" step="0.1" min="40" max="200">
+            </div>
+            <div class="entry-field">
+              <label>Calories (kcal)</label>
+              <input type="number" id="entry-calories" placeholder="2200" step="10">
+            </div>
+            <div class="entry-field">
+              <label>Protein (g)</label>
+              <input type="number" id="entry-protein" placeholder="180">
+            </div>
+            <div class="entry-field">
+              <label>Carbs (g)</label>
+              <input type="number" id="entry-carbs" placeholder="220">
+            </div>
+            <div class="entry-field">
+              <label>Fat (g)</label>
+              <input type="number" id="entry-fat" placeholder="70">
+            </div>
+          </div>
+          <button class="btn-primary" id="entry-save-btn" onclick="saveEntry()">Save Entry</button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+          <div class="stat-card stat-fitness">
+            <div class="stat-value" id="current-weight">—</div>
+            <div class="stat-label">Current Weight</div>
+          </div>
+          <div class="stat-card stat-fitness">
+            <div class="stat-value" id="tdee-display">—</div>
+            <div class="stat-label">Est. TDEE &nbsp;<span class="confidence-badge" id="confidence-badge"></span></div>
+          </div>
+          <div class="stat-card stat-fitness">
+            <div class="stat-value" id="deficit-display">—</div>
+            <div class="stat-label">Daily Deficit</div>
+          </div>
+          <div class="stat-card stat-fitness">
+            <div class="stat-value" id="target-cals">—</div>
+            <div class="stat-label">Target Calories</div>
+          </div>
+        </div>
+
+        <!-- Cut Planner -->
+        <div class="card cut-planner">
+          <div class="card-header">
+            <h3>Cut Planner</h3>
+          </div>
+          <div class="cut-planner-body">
+            <div class="planner-row">
+              <div class="planner-field">
+                <label>Goal Weight (kg)</label>
+                <div class="goal-input-row">
+                  <input type="number" id="goal-weight" placeholder="76" step="0.5">
+                  <button class="btn-secondary btn-sm" onclick="saveGoalWeight()">Set</button>
+                </div>
+              </div>
+              <div class="planner-field">
+                <label>Daily Deficit (kcal)</label>
+                <div class="deficit-buttons">
+                  <button class="deficit-btn" data-deficit="250" onclick="selectDeficit(250)">250</button>
+                  <button class="deficit-btn active" data-deficit="500" onclick="selectDeficit(500)">500</button>
+                  <button class="deficit-btn" data-deficit="750" onclick="selectDeficit(750)">750</button>
+                  <button class="deficit-btn" data-deficit="1000" onclick="selectDeficit(1000)">1000</button>
+                </div>
+                <div class="custom-deficit-row">
+                  <input type="number" id="custom-deficit-input" placeholder="Custom kcal..." min="50" max="2500" step="50">
+                  <button class="btn-secondary btn-sm" onclick="setCustomDeficit()">Set</button>
+                </div>
+              </div>
+            </div>
+            <div id="cut-projection" class="cut-projection"></div>
+            <div id="progress-section" class="progress-section"></div>
+          </div>
+        </div>
+
+        <!-- Weight Chart -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Weight History</h3>
+            <select id="chart-range" onchange="updateChart()" class="select-sm">
+              <option value="30">Last 30 days</option>
+              <option value="60">Last 60 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+          <div class="chart-container">
+            <canvas id="weight-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- TDEE Info -->
+        <div class="card tdee-info-card" id="tdee-info-card"></div>
+
+      </section>
+
+      <!-- ===== HABITS SECTION ===== -->
+      <section id="habits-section" class="section hidden">
+
+        <!-- Week Stats -->
+        <div id="habits-week-stats" class="habits-week-stats card"></div>
+
+        <!-- Week Navigator -->
+        <div class="week-nav card">
+          <button class="btn-ghost btn-sm" onclick="navigateWeek(-1)">← Prev</button>
+          <span id="week-label" class="week-label"></span>
+          <button class="btn-ghost btn-sm" onclick="navigateWeek(1)" id="week-next-btn">Next →</button>
+        </div>
+
+        <!-- Habit Grid -->
+        <div class="card habit-grid-card">
+          <div class="habit-grid-header">
+            <div class="habit-name-col"></div>
+            <div id="habit-day-headers" class="habit-day-headers"></div>
+          </div>
+          <div id="habit-rows" class="habit-rows">
+            <div class="loading-state">Loading habits...</div>
+          </div>
+        </div>
+
+        <!-- Monthly Overview -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="section-title habits-title">Monthly Overview</h3>
+          </div>
+          <div id="monthly-overview"></div>
+        </div>
+
+        <!-- Manage Habits -->
+        <div class="section-header">
+          <h2 class="section-title habits-title">Manage Habits</h2>
+          <button class="btn-secondary btn-sm" onclick="openAddHabitModal()">+ Add</button>
+        </div>
+        <div id="habits-manage-list" class="habits-manage-list"></div>
+
+      </section>
+
+    </main>
+
+    <!-- Bottom nav (mobile) -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-btn active" data-section="home" onclick="navigate('home')">
+        <span class="bnav-icon">🏠</span>
+        <span class="bnav-label">Home</span>
+      </button>
+      <button class="bottom-nav-btn" data-section="ai" onclick="navigate('ai')">
+        <span class="bnav-icon">🧠</span>
+        <span class="bnav-label">AI</span>
+      </button>
+      <button class="bottom-nav-btn" data-section="fitness" onclick="navigate('fitness')">
+        <span class="bnav-icon">💪</span>
+        <span class="bnav-label">Fitness</span>
+      </button>
+      <button class="bottom-nav-btn" data-section="habits" onclick="navigate('habits')">
+        <span class="bnav-icon">✅</span>
+        <span class="bnav-label">Habits</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ===== MODALS ===== -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="handleOverlayClick(event)">
+
+    <!-- Log Study Modal -->
+    <div id="log-study-modal" class="modal hidden">
+      <div class="modal-header">
+        <h3>Log Study Session</h3>
+        <button class="btn-ghost btn-icon" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Course</label>
+          <select id="study-course-select" class="input-full"></select>
+        </div>
+        <div class="form-group">
+          <label>Duration (minutes)</label>
+          <input type="number" id="study-duration" placeholder="60" class="input-full">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="study-date" class="input-full">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="study-notes" rows="3" placeholder="What did you cover?" class="input-full"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveStudyLog()">Save Session</button>
+      </div>
+    </div>
+
+    <!-- Course Logs Modal -->
+    <div id="course-logs-modal" class="modal hidden">
+      <div class="modal-header">
+        <h3 id="course-logs-title">Study Log</h3>
+        <button class="btn-ghost btn-icon" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="course-logs-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+
+    <!-- Set Time Goal Modal -->
+    <div id="set-time-goal-modal" class="modal hidden">
+      <div class="modal-header">
+        <h3>Set Time Goal</h3>
+        <button class="btn-ghost btn-icon" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="time-goal-habit-name" style="font-weight:600;margin-bottom:16px;color:var(--text)"></p>
+        <div class="form-group">
+          <label>Goal Type</label>
+          <select id="time-goal-type" class="input-full">
+            <option value="min">Minimum — do at least X minutes</option>
+            <option value="max">Maximum — limit to X minutes</option>
+            <option value="none">Remove time goal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Minutes</label>
+          <input type="number" id="time-goal-minutes" placeholder="e.g. 30" min="1" max="480" class="input-full">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveHabitTimeGoal()">Save Goal</button>
+      </div>
+    </div>
+
+    <!-- Log Habit Time Modal -->
+    <div id="log-habit-time-modal" class="modal hidden">
+      <div class="modal-header">
+        <h3 id="log-time-habit-name">Log Time</h3>
+        <button class="btn-ghost btn-icon" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="log-time-goal-hint" style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;"></p>
+        <div class="form-group">
+          <label>Minutes spent</label>
+          <input type="number" id="log-time-minutes" placeholder="e.g. 25" min="1" max="480" class="input-full">
+        </div>
+        <input type="hidden" id="log-time-habit-id">
+        <input type="hidden" id="log-time-date">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveHabitTime()">Log Time</button>
+      </div>
+    </div>
+
+    <!-- Add Habit Modal -->
+    <div id="add-habit-modal" class="modal hidden">
+      <div class="modal-header">
+        <h3>Add Habit</h3>
+        <button class="btn-ghost btn-icon" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Habit Name</label>
+          <input type="text" id="new-habit-name" placeholder="e.g. Morning run" class="input-full">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveNewHabit()">Add Habit</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

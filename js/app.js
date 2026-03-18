@@ -110,6 +110,7 @@ const state = {
   nutritionLogs: [],
   habits: [],
   habitLogs: [],
+  todos: [],
   settings: {},
   selectedDeficit: 500,
   currentWeekOffset: 0,
@@ -249,6 +250,7 @@ async function loadAllData() {
     { data: nutritionLogs },
     { data: habits },
     { data: habitLogs },
+    { data: todos },
     { data: settings },
   ] = await Promise.all([
     db.from('courses').select('*').order('order_index'),
@@ -257,6 +259,7 @@ async function loadAllData() {
     db.from('nutrition_logs').select('*').order('date'),
     db.from('habits').select('*').eq('is_active', true).order('order_index'),
     db.from('habit_logs').select('*'),
+    db.from('todos').select('*').order('created_at'),
     db.from('settings').select('*'),
   ]);
 
@@ -266,6 +269,7 @@ async function loadAllData() {
   state.nutritionLogs = nutritionLogs || [];
   state.habits = (habits || []).filter(h => h.is_active);
   state.habitLogs = habitLogs || [];
+  state.todos = todos || [];
   state.settings = Object.fromEntries((settings || []).map(s => [s.key, s.value]));
   state.selectedDeficit = parseInt(getSetting('selected_deficit', '500'));
 }
@@ -1281,6 +1285,7 @@ function renderHome() {
   }
 
   renderTodayDigest();
+  renderTodos();
   renderWeekDigest();
 }
 
@@ -1496,6 +1501,54 @@ async function saveHabitTime() {
   renderHabits();
   if (shouldCheck) showToast('Goal met — habit auto-checked! ✓');
   else showToast('Time logged!');
+}
+
+// ==========================================
+// TO-DO LIST
+// ==========================================
+
+function renderTodos() {
+  const list = document.getElementById('todo-list');
+  if (!list) return;
+  const open = state.todos.filter(t => !t.completed);
+  const done = state.todos.filter(t => t.completed);
+  const sorted = [...open, ...done];
+  if (!sorted.length) {
+    list.innerHTML = '<div class="todo-empty">No tasks — add one above</div>';
+    return;
+  }
+  list.innerHTML = sorted.map(t => `
+    <div class="todo-item">
+      <button class="todo-checkbox ${t.completed ? 'done' : ''}" onclick="toggleTodo('${t.id}',${t.completed})">${t.completed ? '✓' : ''}</button>
+      <span class="todo-text ${t.completed ? 'done' : ''}">${t.text}</span>
+      <button class="todo-delete" onclick="deleteTodo('${t.id}')" title="Delete">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addTodo() {
+  const input = document.getElementById('todo-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const { data, error } = await db.from('todos').insert({ text, completed: false }).select().single();
+  if (error) { showToast('Failed to add task', 'error'); return; }
+  state.todos.push(data);
+  input.value = '';
+  renderTodos();
+}
+
+async function toggleTodo(id, currentlyDone) {
+  const completed = !currentlyDone;
+  await db.from('todos').update({ completed }).eq('id', id);
+  const todo = state.todos.find(t => t.id === id);
+  if (todo) todo.completed = completed;
+  renderTodos();
+}
+
+async function deleteTodo(id) {
+  await db.from('todos').delete().eq('id', id);
+  state.todos = state.todos.filter(t => t.id !== id);
+  renderTodos();
 }
 
 // ==========================================

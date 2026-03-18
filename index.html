@@ -109,6 +109,15 @@
           <div id="today-digest" class="today-digest-grid"></div>
         </div>
 
+        <div class="digest-label">To-Do</div>
+        <div class="card todo-card">
+          <div class="todo-input-row">
+            <input type="text" id="todo-input" placeholder="Add a task..." class="todo-input" onkeydown="if(event.key==='Enter')addTodo()">
+            <button class="btn-primary btn-sm" onclick="addTodo()">Add</button>
+          </div>
+          <div id="todo-list" class="todo-list"></div>
+        </div>
+
         <div class="digest-label">This Week</div>
         <div id="week-digest" class="week-digest-grid"></div>
 

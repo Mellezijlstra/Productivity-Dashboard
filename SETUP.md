@@ -74,6 +74,22 @@ The app stores your Supabase URL and anon key in your browser's localStorage.
 
 ---
 
+## Migration SQL — To-Do List (run once to unlock the Home tab to-do list)
+
+```sql
+CREATE TABLE IF NOT EXISTS todos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  text TEXT NOT NULL,
+  completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE todos DISABLE ROW LEVEL SECURITY;
+```
+
+Run this in the Supabase SQL Editor. Safe to run multiple times.
+
+---
+
 ## Migration SQL — Timed Habits (run once to unlock timed habit features)
 
 ```sql

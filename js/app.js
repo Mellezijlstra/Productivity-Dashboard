@@ -312,26 +312,33 @@ function calculateAdaptiveTDEE() {
   state.weightLogs.forEach(w => {
     const n = state.nutritionLogs.find(n => n.date === w.date);
     if (n && n.calories > 0) {
-      pairs.push({ date: new Date(w.date + 'T00:00:00'), weight: parseFloat(w.weight), calories: parseInt(n.calories) });
+      pairs.push({ dayNum: new Date(w.date + 'T00:00:00').getTime() / 86400000, weight: parseFloat(w.weight), calories: parseInt(n.calories) });
     }
   });
 
   if (pairs.length < 3) return { tdee: null, confidence: 'insufficient', dataPoints: pairs.length };
 
-  pairs.sort((a, b) => a.date - b.date);
+  pairs.sort((a, b) => a.dayNum - b.dayNum);
   const n = pairs.length;
-  const avgCalories = pairs.reduce((s, p) => s + p.calories, 0) / n;
-  const firstWeight = pairs[0].weight;
-  const lastWeight = pairs[n - 1].weight;
-  const daySpan = (pairs[n - 1].date - pairs[0].date) / 86400000;
-
+  const daySpan = pairs[n - 1].dayNum - pairs[0].dayNum;
   if (daySpan < 1) return { tdee: null, confidence: 'insufficient', dataPoints: n };
 
-  const weightChangePerDay = (lastWeight - firstWeight) / daySpan;
-  const tdee = Math.round(avgCalories - weightChangePerDay * KCAL_PER_KG);
+  const avgCalories = pairs.reduce((s, p) => s + p.calories, 0) / n;
+
+  // Linear regression on weight over time — more robust than first/last points
+  const xMean = pairs.reduce((s, p) => s + p.dayNum, 0) / n;
+  const yMean = pairs.reduce((s, p) => s + p.weight, 0) / n;
+  const num = pairs.reduce((s, p) => s + (p.dayNum - xMean) * (p.weight - yMean), 0);
+  const den = pairs.reduce((s, p) => s + Math.pow(p.dayNum - xMean, 2), 0);
+  const weightChangePerDay = den > 0 ? num / den : 0;
+
+  const tdeeRaw = Math.round(avgCalories - weightChangePerDay * KCAL_PER_KG);
+
+  // Sanity clamp — no realistic TDEE is outside 1200–4500 kcal
+  if (tdeeRaw < 1200 || tdeeRaw > 4500) return { tdee: null, confidence: 'noisy', dataPoints: n };
 
   const confidence = n < 7 ? 'low' : n < 14 ? 'medium' : n < 28 ? 'good' : 'high';
-  return { tdee, confidence, dataPoints: n };
+  return { tdee: tdeeRaw, confidence, dataPoints: n };
 }
 
 function getCutProjection() {
@@ -648,11 +655,14 @@ function renderTDEEInfo() {
   const card = document.getElementById('tdee-info-card');
   const { tdee, confidence, dataPoints } = calculateAdaptiveTDEE();
   if (!tdee) {
-    card.innerHTML = `<strong>Adaptive TDEE</strong><br>Your estimated maintenance calories will appear here once you have at least 3 days of paired weight + calorie data. The more data, the more accurate it gets.`;
+    const msg = confidence === 'noisy'
+      ? `<strong>Adaptive TDEE</strong> — Too noisy to estimate reliably yet (${dataPoints} days logged). Day-to-day weight swings from water retention are masking the real trend. Keep logging — it stabilises quickly after 7+ days.`
+      : `<strong>Adaptive TDEE</strong><br>Your estimated maintenance calories will appear here once you have at least 3 days of paired weight + calorie data. The more data, the more accurate it gets.`;
+    card.innerHTML = msg;
     return;
   }
   const confidenceDesc = { low: 'Early estimate — keep logging', medium: 'Getting there — needs more data', good: 'Pretty solid — improving with each day', high: 'Highly accurate' }[confidence];
-  card.innerHTML = `<strong>Adaptive TDEE</strong> — Based on <strong style="color:var(--fitness-light)">${dataPoints} days</strong> of data. Accuracy: ${confidenceDesc}. The algorithm back-calculates your real maintenance from actual weight change vs. logged calories — no formulas, just your real numbers.`;
+  card.innerHTML = `<strong>Adaptive TDEE</strong> — Based on <strong style="color:var(--fitness-light)">${dataPoints} days</strong> of data. Accuracy: ${confidenceDesc}. Uses linear regression across all data points to filter out day-to-day water weight noise.`;
 }
 
 async function saveEntry() {

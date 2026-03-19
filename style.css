@@ -1284,6 +1284,48 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .manage-row-actions { display: flex; gap: 6px; align-items: center; }
 
 /* ==========================================
+   Weekly Data Table
+   ========================================== */
+.weekly-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.weekly-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 420px;
+}
+.weekly-table th {
+  text-align: right;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.weekly-table th:first-child { text-align: left; }
+.weekly-table td {
+  text-align: right;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.weekly-table td:first-child { text-align: left; font-weight: 500; color: var(--text); }
+.weekly-table tr:last-child td { border-bottom: none; }
+.weekly-table tr.wt-today td { background: rgba(249,115,22,0.06); }
+.weekly-table tr.wt-today td:first-child { color: var(--fitness-light); }
+.weekly-table tr.wt-avg td {
+  font-weight: 600;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.weekly-table tr.wt-avg td:first-child { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.weekly-table .wt-empty { color: var(--text-muted); }
+.weekly-table .wt-on-target { color: var(--success); }
+.weekly-table .wt-over { color: var(--fitness-light); }
+
+/* ==========================================
    To-Do List
    ========================================== */
 .todo-card { padding: 16px 20px; margin-bottom: 20px; }

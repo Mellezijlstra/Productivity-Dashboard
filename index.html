@@ -266,6 +266,21 @@
           </div>
         </div>
 
+        <!-- Weekly Data Table -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Weekly Log</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-ghost btn-sm" onclick="navigateFitnessWeek(-1)">← Prev</button>
+              <span id="fitness-week-label" style="font-size:0.8rem;color:var(--text-dim)"></span>
+              <button class="btn-ghost btn-sm" onclick="navigateFitnessWeek(1)" id="fitness-week-next-btn">Next →</button>
+            </div>
+          </div>
+          <div class="weekly-table-wrap">
+            <table id="weekly-data-table" class="weekly-table"></table>
+          </div>
+        </div>
+
         <!-- Weight Chart -->
         <div class="card">
           <div class="card-header">

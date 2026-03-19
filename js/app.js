@@ -115,6 +115,7 @@ const state = {
   selectedDeficit: 500,
   currentWeekOffset: 0,
   currentMonthOffset: 0,
+  fitnessWeekOffset: 0,
 };
 
 // ==========================================
@@ -541,8 +542,84 @@ function renderFitness() {
   prefillEntryForDate(dateInput.value);
   renderFitnessStats();
   renderCutPlanner();
+  renderWeeklyDataTable();
   renderWeightChart();
   renderTDEEInfo();
+}
+
+function navigateFitnessWeek(dir) {
+  const newOffset = state.fitnessWeekOffset + dir;
+  if (newOffset > 0) return;
+  state.fitnessWeekOffset = newOffset;
+  renderWeeklyDataTable();
+}
+
+function renderWeeklyDataTable() {
+  const weekDates = getWeekDates(state.fitnessWeekOffset);
+  const today = todayStr();
+  const { tdee } = calculateAdaptiveTDEE();
+  const target = tdee ? tdee - state.selectedDeficit : null;
+
+  // Week label
+  const labelEl = document.getElementById('fitness-week-label');
+  if (labelEl) labelEl.textContent = `${formatDateDisplay(weekDates[0])} – ${formatDateDisplay(weekDates[6])}`;
+  const nextBtn = document.getElementById('fitness-week-next-btn');
+  if (nextBtn) { nextBtn.disabled = state.fitnessWeekOffset >= 0; nextBtn.style.opacity = state.fitnessWeekOffset >= 0 ? '0.4' : '1'; }
+
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const rows = weekDates.map((date, i) => {
+    const w = state.weightLogs.find(l => l.date === date);
+    const n = state.nutritionLogs.find(l => l.date === date);
+    const isFuture = date > today;
+    const isToday = date === today;
+    const dayLabel = isToday ? 'Today' : dayNames[i];
+
+    if (isFuture) {
+      return `<tr><td>${dayLabel}</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td></tr>`;
+    }
+
+    const calClass = n && target ? (Math.abs(n.calories - target) < 150 ? 'wt-on-target' : n.calories > target + 150 ? 'wt-over' : '') : '';
+
+    return `<tr class="${isToday ? 'wt-today' : ''}">
+      <td>${dayLabel}</td>
+      <td>${w ? w.weight : '<span class="wt-empty">—</span>'}</td>
+      <td class="${calClass}">${n ? n.calories : '<span class="wt-empty">—</span>'}</td>
+      <td>${n && n.protein ? n.protein : '<span class="wt-empty">—</span>'}</td>
+      <td>${n && n.carbs ? n.carbs : '<span class="wt-empty">—</span>'}</td>
+      <td>${n && n.fat ? n.fat : '<span class="wt-empty">—</span>'}</td>
+    </tr>`;
+  });
+
+  // Averages (only past/today days with data)
+  const pastDates = weekDates.filter(d => d <= today);
+  const wLogs = pastDates.map(d => state.weightLogs.find(l => l.date === d)).filter(Boolean);
+  const nLogs = pastDates.map(d => state.nutritionLogs.find(l => l.date === d)).filter(Boolean);
+  const avg = (arr, key) => arr.length ? (arr.reduce((s, x) => s + parseFloat(x[key] || 0), 0) / arr.length) : null;
+
+  const avgW = avg(wLogs, 'weight');
+  const avgCal = avg(nLogs, 'calories');
+  const avgPro = avg(nLogs, 'protein');
+  const avgCarb = avg(nLogs, 'carbs');
+  const avgFat = avg(nLogs, 'fat');
+  const calClass = avgCal && target ? (Math.abs(avgCal - target) < 150 ? 'wt-on-target' : avgCal > target + 150 ? 'wt-over' : '') : '';
+
+  const avgRow = `<tr class="wt-avg">
+    <td>Avg</td>
+    <td>${avgW ? avgW.toFixed(1) : '—'}</td>
+    <td class="${calClass}">${avgCal ? Math.round(avgCal) : '—'}</td>
+    <td>${avgPro ? avgPro.toFixed(0) : '—'}</td>
+    <td>${avgCarb ? avgCarb.toFixed(0) : '—'}</td>
+    <td>${avgFat ? avgFat.toFixed(0) : '—'}</td>
+  </tr>`;
+
+  const table = document.getElementById('weekly-data-table');
+  if (!table) return;
+  table.innerHTML = `
+    <thead><tr>
+      <th>Day</th><th>Weight</th><th>Kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th>
+    </tr></thead>
+    <tbody>${rows.join('')}${avgRow}</tbody>
+  `;
 }
 
 function prefillEntryForDate(date) {

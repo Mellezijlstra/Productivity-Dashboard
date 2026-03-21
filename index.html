@@ -323,13 +323,23 @@
   protocol TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS day_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL UNIQUE,
+  day_type TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ALTER TABLE sauna_logs DISABLE ROW LEVEL SECURITY;
--- If table already exists, add the protocol column:
+ALTER TABLE day_logs DISABLE ROW LEVEL SECURITY;
+-- If sauna_logs already existed without the protocol column:
 ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;</pre>
             <button class="btn-secondary btn-sm" onclick="retrySaunaLoad()">Retry</button>
           </div>
 
           <div id="sauna-main-content">
+
+            <!-- Day schedule (JS rendered) -->
+            <div id="sauna-schedule"></div>
 
             <!-- Date picker + custom log -->
             <div class="card">

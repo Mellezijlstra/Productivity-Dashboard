@@ -695,6 +695,60 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .sauna-remaining { font-size: 0.7rem; color: var(--text-muted); }
 .sauna-history-list { display: flex; flex-direction: column; }
 
+/* Day schedule */
+.schedule-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.strip-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.strip-day.today {
+  border-color: var(--sauna);
+  background: var(--sauna-dim);
+}
+.strip-day.empty { opacity: 0.4; }
+.strip-day-name { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
+.strip-day-icon { font-size: 1.1rem; line-height: 1; }
+.strip-day-label { font-size: 0.6rem; color: var(--text-dim); text-align: center; }
+
+.day-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.day-type-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.day-type-card:hover { border-color: var(--sauna); background: var(--surface-2); }
+.day-type-card.active {
+  border-color: var(--sauna);
+  background: rgba(220, 38, 38, 0.07);
+}
+.day-type-icon { font-size: 1.4rem; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+.day-type-body { flex: 1; }
+.day-type-label { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.day-type-desc { font-size: 0.75rem; color: var(--text-dim); line-height: 1.4; }
+.day-type-suggested { font-size: 0.72rem; color: var(--sauna-light); font-weight: 600; margin-top: 4px; }
+.day-type-check { font-size: 1rem; color: var(--sauna-light); font-weight: 700; flex-shrink: 0; align-self: center; }
+
 /* Protocol cards */
 .sauna-protocols-grid {
   display: grid;
@@ -760,6 +814,19 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--sauna-light);
+}
+.protocol-card.suggested {
+  border-left-color: var(--success);
+  background: rgba(34, 197, 94, 0.04);
+}
+.protocol-suggested-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--success-dim);
+  color: var(--success);
+  padding: 2px 7px;
+  border-radius: 20px;
+  vertical-align: middle;
 }
 
 .entry-grid {

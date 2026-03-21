@@ -102,6 +102,13 @@ CREATE TABLE IF NOT EXISTS sauna_logs (
 -- If you already ran the old version of this table, run this too:
 ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;
 
+CREATE TABLE IF NOT EXISTS day_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL UNIQUE,
+  day_type TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE courses DISABLE ROW LEVEL SECURITY;
 ALTER TABLE study_logs DISABLE ROW LEVEL SECURITY;
@@ -109,13 +116,15 @@ ALTER TABLE weight_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE nutrition_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE habits DISABLE ROW LEVEL SECURITY;
 ALTER TABLE habit_logs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE sauna_logs DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE sauna_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE day_logs DISABLE ROW LEVEL SECURITY;`;
 
 let db = null;
 let weightChart = null;
 
 const state = {
   saunaLogs: [],
+  dayLogs: [],
   fitnessTab: 'cut',
   courses: [],
   studyLogs: [],
@@ -305,6 +314,9 @@ async function loadAllData() {
 
   const { data: saunaLogs, error: saunaErr } = await db.from('sauna_logs').select('*').order('date', { ascending: false });
   state.saunaLogs = saunaErr ? null : (saunaLogs || []);
+
+  const { data: dayLogs, error: dayErr } = await db.from('day_logs').select('*').order('date', { ascending: false });
+  state.dayLogs = dayErr ? null : (dayLogs || []);
 }
 
 async function saveSetting(key, value) {
@@ -863,6 +875,79 @@ async function selectDeficit(deficit) {
 // SAUNA TRACKER
 // ==========================================
 
+const DAY_TYPES = [
+  { id: 'upper_sauna',      icon: '💪', label: 'Upper + Sauna',         desc: 'Upper body training → straight into sauna',             hasSauna: true,  suggestedProtocol: 'recovery' },
+  { id: 'lower_sauna',      icon: '🦵', label: 'Lower + Sauna',         desc: 'Lower body training → straight into sauna',             hasSauna: true,  suggestedProtocol: 'recovery' },
+  { id: 'rest_sauna',       icon: '🧖', label: 'Rest + Sauna',          desc: 'No workout — sauna as the main recovery tool',          hasSauna: true,  suggestedProtocol: 'double'   },
+  { id: 'upper_work_sauna', icon: '🏋️', label: 'Upper → Work → Sauna', desc: 'Upper workout · 6h work block · evening sauna',         hasSauna: true,  suggestedProtocol: 'gh'       },
+  { id: 'lower_work_sauna', icon: '🏃', label: 'Lower → Work → Sauna', desc: 'Lower workout · 6h work block · evening sauna',         hasSauna: true,  suggestedProtocol: 'gh'       },
+  { id: 'full_rest',        icon: '🌙', label: 'Full Rest',             desc: 'Complete recovery — no workout, no sauna',              hasSauna: false, suggestedProtocol: null       },
+];
+
+function renderDaySchedule() {
+  const el = document.getElementById('sauna-schedule');
+  if (!el) return;
+
+  const today = todayStr();
+  const dow = (new Date().getDay() + 6) % 7;
+  const weekStart = addDays(today, -dow);
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const todayLog = (state.dayLogs || []).find(l => l.date === today);
+  const todayType = todayLog ? DAY_TYPES.find(t => t.id === todayLog.day_type) : null;
+
+  const strip = dayNames.map((name, i) => {
+    const date = addDays(weekStart, i);
+    const log = (state.dayLogs || []).find(l => l.date === date);
+    const type = log ? DAY_TYPES.find(t => t.id === log.day_type) : null;
+    const isToday = date === today;
+    return `
+      <div class="strip-day ${isToday ? 'today' : ''} ${!type ? 'empty' : ''}">
+        <div class="strip-day-name">${name}</div>
+        <div class="strip-day-icon">${type ? type.icon : '·'}</div>
+        <div class="strip-day-label">${type ? type.label.split(' ')[0] : ''}</div>
+      </div>`;
+  }).join('');
+
+  const cards = DAY_TYPES.map(type => {
+    const isActive = todayType?.id === type.id;
+    const suggested = type.suggestedProtocol ? SAUNA_PROTOCOLS.find(p => p.id === type.suggestedProtocol)?.name : null;
+    return `
+      <div class="day-type-card ${isActive ? 'active' : ''}" onclick="logDayType('${type.id}')">
+        <div class="day-type-icon">${type.icon}</div>
+        <div class="day-type-body">
+          <div class="day-type-label">${type.label}</div>
+          <div class="day-type-desc">${type.desc}</div>
+          ${suggested ? `<div class="day-type-suggested">→ ${suggested}</div>` : ''}
+        </div>
+        ${isActive ? '<div class="day-type-check">✓</div>' : ''}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header"><h3>Today's Schedule</h3></div>
+      <div class="schedule-strip">${strip}</div>
+      <div class="day-type-grid">${cards}</div>
+    </div>`;
+}
+
+async function logDayType(typeId) {
+  const date = document.getElementById('sauna-date').value || todayStr();
+  const existing = (state.dayLogs || []).find(l => l.date === date);
+  let data, error;
+  if (existing) {
+    ({ data, error } = await db.from('day_logs').update({ day_type: typeId }).eq('id', existing.id).select().single());
+    if (data) existing.day_type = typeId;
+  } else {
+    ({ data, error } = await db.from('day_logs').insert({ date, day_type: typeId }).select().single());
+    if (data) state.dayLogs.push(data);
+  }
+  if (error) { showToast('Failed to log day type', 'error'); return; }
+  renderSaunaTab();
+  showToast(`${DAY_TYPES.find(t => t.id === typeId)?.label} logged!`);
+}
+
 const SAUNA_PROTOCOLS = [
   {
     id: 'base', name: 'Base Session', structure: '1 × 20 min', duration: 20, tag: 'Daily driver',
@@ -935,14 +1020,21 @@ function renderSaunaTab() {
   document.getElementById('sauna-this-month').textContent = thisMonthCount || '—';
   document.getElementById('sauna-avg-duration').textContent = avgMin ? avgMin + 'm' : '—';
 
+  renderDaySchedule();
+
   const dow = (new Date().getDay() + 6) % 7;
   const thisWeekStart = addDays(todayStr(), -dow);
+  const todayDayLog = (state.dayLogs || []).find(l => l.date === todayStr());
+  const todayDayType = todayDayLog ? DAY_TYPES.find(t => t.id === todayDayLog.day_type) : null;
+  const suggestedProtoId = todayDayType?.suggestedProtocol || null;
+
   document.getElementById('sauna-protocols').innerHTML = SAUNA_PROTOCOLS.map(p => {
     const weekCount = logs.filter(l => l.protocol === p.id && l.date >= thisWeekStart).length;
+    const isSuggested = p.id === suggestedProtoId;
     return `
-      <div class="protocol-card">
+      <div class="protocol-card ${isSuggested ? 'suggested' : ''}">
         <div class="protocol-card-header">
-          <div class="protocol-name">${p.name}</div>
+          <div class="protocol-name">${p.name}${isSuggested ? ' <span class="protocol-suggested-badge">Suggested</span>' : ''}</div>
           <span class="protocol-tag">${p.tag}</span>
         </div>
         <div class="protocol-structure">${p.structure}</div>
@@ -1030,9 +1122,11 @@ async function deleteSaunaLog(id) {
 }
 
 async function retrySaunaLoad() {
-  const { data, error } = await db.from('sauna_logs').select('*').order('date', { ascending: false });
-  if (error) { showToast('Table not found — run the SQL first', 'error'); return; }
-  state.saunaLogs = data || [];
+  const { data: sl, error: slErr } = await db.from('sauna_logs').select('*').order('date', { ascending: false });
+  if (slErr) { showToast('sauna_logs not found — run the SQL first', 'error'); return; }
+  state.saunaLogs = sl || [];
+  const { data: dl, error: dlErr } = await db.from('day_logs').select('*').order('date', { ascending: false });
+  state.dayLogs = dlErr ? null : (dl || []);
   renderSaunaTab();
 }
 

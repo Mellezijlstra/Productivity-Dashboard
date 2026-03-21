@@ -1073,7 +1073,11 @@ function renderSaunaTab() {
     historyEl.innerHTML = '<div class="no-logs">No sessions yet. Log your first sauna visit above.</div>';
     return;
   }
-  historyEl.innerHTML = logs.map(l => {
+
+  const foundationLogs = logs.filter(l => l.protocol === 'foundation');
+  const regularLogs = logs.filter(l => l.protocol !== 'foundation');
+
+  let historyHtml = regularLogs.map(l => {
     const proto = l.protocol ? SAUNA_PROTOCOLS.find(p => p.id === l.protocol) : null;
     return `
     <div class="log-entry">
@@ -1087,6 +1091,21 @@ function renderSaunaTab() {
       </div>
     </div>`;
   }).join('');
+
+  if (foundationLogs.length) {
+    const weeks = Math.round(foundationLogs.length / 4);
+    const totalH = (foundationLogs.reduce((s, l) => s + l.duration_minutes, 0) / 60).toFixed(0);
+    historyHtml += `
+    <div class="foundation-block">
+      <div class="foundation-icon">🏗️</div>
+      <div class="foundation-body">
+        <div class="foundation-label">Foundation</div>
+        <div class="foundation-desc">${foundationLogs.length} sessions · ~${totalH}h · ${weeks} weeks pre-tracking baseline</div>
+      </div>
+    </div>`;
+  }
+
+  historyEl.innerHTML = historyHtml;
 }
 
 async function logSaunaProtocol(protocolId, duration) {

@@ -24,6 +24,11 @@
   --habits-dim:   #0b5563;
   --habits-glow:  rgba(6, 182, 212, 0.15);
 
+  --sauna:        #dc2626;
+  --sauna-light:  #f87171;
+  --sauna-dim:    #450a0a;
+  --sauna-glow:   rgba(220, 38, 38, 0.15);
+
   --success:      #22c55e;
   --success-dim:  #14532d;
   --warning:      #f59e0b;
@@ -430,11 +435,13 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .stat-ai::before { background: linear-gradient(90deg, var(--ai), var(--ai-light)); }
 .stat-fitness::before { background: linear-gradient(90deg, var(--fitness), var(--fitness-light)); }
 .stat-habits::before { background: linear-gradient(90deg, var(--habits), var(--habits-light)); }
+.stat-sauna::before { background: linear-gradient(90deg, var(--sauna), var(--sauna-light)); }
 
 .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; margin-bottom: 6px; }
 .stat-ai .stat-value { color: var(--ai-light); }
 .stat-fitness .stat-value { color: var(--fitness-light); }
 .stat-habits .stat-value { color: var(--habits-light); }
+.stat-sauna .stat-value { color: var(--sauna-light); }
 .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* ==========================================
@@ -604,6 +611,89 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .entry-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .entry-card-header h3 { font-size: 1rem; }
 .entry-date { font-size: 0.8rem; color: var(--text-muted); }
+
+/* ==========================================
+   Fitness Tabs
+   ========================================== */
+.fitness-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.fitness-tab {
+  padding: 8px 22px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fitness-tab.active {
+  background: var(--fitness-dim);
+  color: var(--fitness-light);
+  border-color: var(--fitness);
+}
+.fitness-tab[data-tab="sauna"].active {
+  background: var(--sauna-dim);
+  color: var(--sauna-light);
+  border-color: var(--sauna);
+}
+.fitness-tab:hover:not(.active) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* ==========================================
+   Sauna Tracker
+   ========================================== */
+.sauna-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.sauna-form .entry-field { flex: 1; min-width: 120px; }
+.sauna-form .btn-primary { align-self: flex-end; white-space: nowrap; }
+
+.sauna-benefits-list { display: flex; flex-direction: column; gap: 10px; }
+.sauna-benefit {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.sauna-benefit.unlocked {
+  background: rgba(220, 38, 38, 0.05);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+.sauna-benefit.locked { opacity: 0.55; }
+.sauna-benefit-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.sauna-benefit-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sauna-benefit-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.45; }
+.sauna-unlocked-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--sauna-dim);
+  color: var(--sauna-light);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.sauna-remaining { font-size: 0.7rem; color: var(--text-muted); }
+.sauna-history-list { display: flex; flex-direction: column; }
 
 .entry-grid {
   display: grid;

@@ -182,6 +182,13 @@
       <!-- ===== FITNESS SECTION ===== -->
       <section id="fitness-section" class="section hidden">
 
+        <div class="fitness-tabs">
+          <button class="fitness-tab active" data-tab="cut" onclick="switchFitnessTab('cut')">Cut Tracker</button>
+          <button class="fitness-tab" data-tab="sauna" onclick="switchFitnessTab('sauna')">Sauna</button>
+        </div>
+
+        <div id="fitness-tab-cut" class="fitness-tab-pane">
+
         <!-- Today's Entry -->
         <div class="entry-card card">
           <div class="entry-card-header">
@@ -299,6 +306,79 @@
 
         <!-- TDEE Info -->
         <div class="card tdee-info-card" id="tdee-info-card"></div>
+
+        </div><!-- /fitness-tab-cut -->
+
+        <!-- SAUNA TAB -->
+        <div id="fitness-tab-sauna" class="fitness-tab-pane hidden">
+
+          <!-- Setup notice (shown if table not yet created) -->
+          <div id="sauna-setup-notice" class="card hidden">
+            <div class="card-header"><h3>One-time Setup Required</h3></div>
+            <p style="margin-bottom:12px;font-size:0.85rem">Run this in your Supabase SQL Editor to enable sauna tracking, then click Retry:</p>
+            <pre class="sql-preview" style="font-size:0.75rem;margin-bottom:12px">CREATE TABLE IF NOT EXISTS sauna_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL,
+  duration_minutes INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE sauna_logs DISABLE ROW LEVEL SECURITY;</pre>
+            <button class="btn-secondary btn-sm" onclick="retrySaunaLoad()">Retry</button>
+          </div>
+
+          <div id="sauna-main-content">
+
+            <!-- Log session -->
+            <div class="card">
+              <div class="card-header"><h3>Log Session</h3></div>
+              <div class="sauna-form">
+                <div class="entry-field">
+                  <label>Date</label>
+                  <input type="date" id="sauna-date">
+                </div>
+                <div class="entry-field">
+                  <label>Duration (min)</label>
+                  <input type="number" id="sauna-duration" min="5" max="180" step="5" placeholder="20">
+                </div>
+                <button class="btn-primary" onclick="saveSaunaLog()">Log Session</button>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+              <div class="stat-card stat-sauna">
+                <div class="stat-value" id="sauna-total-sessions">—</div>
+                <div class="stat-label">Total Sessions</div>
+              </div>
+              <div class="stat-card stat-sauna">
+                <div class="stat-value" id="sauna-total-hours">—</div>
+                <div class="stat-label">Total Hours</div>
+              </div>
+              <div class="stat-card stat-sauna">
+                <div class="stat-value" id="sauna-this-month">—</div>
+                <div class="stat-label">This Month</div>
+              </div>
+              <div class="stat-card stat-sauna">
+                <div class="stat-value" id="sauna-avg-duration">—</div>
+                <div class="stat-label">Avg Session</div>
+              </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="card">
+              <div class="card-header"><h3>Benefits Progress</h3></div>
+              <div id="sauna-benefits" class="sauna-benefits-list"></div>
+            </div>
+
+            <!-- History -->
+            <div class="card">
+              <div class="card-header"><h3>Session History</h3></div>
+              <div id="sauna-history" class="sauna-history-list"></div>
+            </div>
+
+          </div><!-- /sauna-main-content -->
+
+        </div><!-- /fitness-tab-sauna -->
 
       </section>
 

@@ -92,18 +92,28 @@ CREATE TABLE IF NOT EXISTS habit_logs (
   UNIQUE(habit_id, date)
 );
 
+CREATE TABLE IF NOT EXISTS sauna_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL,
+  duration_minutes INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE courses DISABLE ROW LEVEL SECURITY;
 ALTER TABLE study_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE weight_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE nutrition_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE habits DISABLE ROW LEVEL SECURITY;
-ALTER TABLE habit_logs DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE habit_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sauna_logs DISABLE ROW LEVEL SECURITY;`;
 
 let db = null;
 let weightChart = null;
 
 const state = {
+  saunaLogs: [],
+  fitnessTab: 'cut',
   courses: [],
   studyLogs: [],
   weightLogs: [],
@@ -289,6 +299,9 @@ async function loadAllData() {
   state.todos = todos || [];
   state.settings = Object.fromEntries((settings || []).map(s => [s.key, s.value]));
   state.selectedDeficit = parseInt(getSetting('selected_deficit', '500'));
+
+  const { data: saunaLogs, error: saunaErr } = await db.from('sauna_logs').select('*').order('date', { ascending: false });
+  state.saunaLogs = saunaErr ? null : (saunaLogs || []);
 }
 
 async function saveSetting(key, value) {
@@ -841,6 +854,117 @@ async function selectDeficit(deficit) {
   await saveSetting('selected_deficit', deficit);
   renderCutPlanner();
   renderFitnessStats();
+}
+
+// ==========================================
+// SAUNA TRACKER
+// ==========================================
+
+const SAUNA_MILESTONES = [
+  { sessions: 1,  desc: 'Acute cortisol drop (~30%), endorphin release, deep muscle relaxation.' },
+  { sessions: 5,  desc: 'Improved sleep onset and quality, better recovery from training.' },
+  { sessions: 10, desc: 'Heat shock protein (HSP70) upregulation — cellular stress protection begins.' },
+  { sessions: 20, desc: 'Cardiovascular adaptations: lower resting HR, improved circulation.' },
+  { sessions: 30, desc: 'Measurable growth hormone spikes — supports muscle retention on a cut.' },
+  { sessions: 50, desc: 'Matches the Finnish cohort protocol linked to 40% lower cardiovascular mortality.' },
+];
+
+function switchFitnessTab(tab) {
+  state.fitnessTab = tab;
+  document.querySelectorAll('.fitness-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.fitness-tab-pane').forEach(p => p.classList.add('hidden'));
+  document.getElementById(`fitness-tab-${tab}`).classList.remove('hidden');
+  if (tab === 'sauna') renderSaunaTab();
+}
+
+function renderSaunaTab() {
+  const notice = document.getElementById('sauna-setup-notice');
+  const main = document.getElementById('sauna-main-content');
+
+  if (state.saunaLogs === null) {
+    notice.classList.remove('hidden');
+    main.classList.add('hidden');
+    return;
+  }
+  notice.classList.add('hidden');
+  main.classList.remove('hidden');
+
+  const dateInput = document.getElementById('sauna-date');
+  if (!dateInput.value) dateInput.value = todayStr();
+
+  const logs = state.saunaLogs;
+  const totalSessions = logs.length;
+  const totalMinutes = logs.reduce((s, l) => s + l.duration_minutes, 0);
+  const totalHours = (totalMinutes / 60).toFixed(1);
+  const avgMin = totalSessions ? Math.round(totalMinutes / totalSessions) : 0;
+  const thisMonth = todayStr().slice(0, 7);
+  const thisMonthCount = logs.filter(l => l.date.startsWith(thisMonth)).length;
+
+  document.getElementById('sauna-total-sessions').textContent = totalSessions || '—';
+  document.getElementById('sauna-total-hours').textContent = totalSessions ? totalHours + 'h' : '—';
+  document.getElementById('sauna-this-month').textContent = thisMonthCount || '—';
+  document.getElementById('sauna-avg-duration').textContent = avgMin ? avgMin + 'm' : '—';
+
+  document.getElementById('sauna-benefits').innerHTML = SAUNA_MILESTONES.map(m => {
+    const unlocked = totalSessions >= m.sessions;
+    const remaining = m.sessions - totalSessions;
+    return `
+      <div class="sauna-benefit ${unlocked ? 'unlocked' : 'locked'}">
+        <div class="sauna-benefit-icon">${unlocked ? '🔥' : '🔒'}</div>
+        <div class="sauna-benefit-body">
+          <div class="sauna-benefit-title">
+            ${m.sessions} session${m.sessions > 1 ? 's' : ''}
+            ${unlocked
+              ? '<span class="sauna-unlocked-badge">Unlocked</span>'
+              : `<span class="sauna-remaining">${remaining} to go</span>`}
+          </div>
+          <div class="sauna-benefit-desc">${m.desc}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const historyEl = document.getElementById('sauna-history');
+  if (!logs.length) {
+    historyEl.innerHTML = '<div class="no-logs">No sessions yet. Log your first sauna visit above.</div>';
+    return;
+  }
+  historyEl.innerHTML = logs.map(l => `
+    <div class="log-entry">
+      <div class="log-entry-left">
+        <div class="log-entry-date">${formatDateDisplay(l.date)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="log-entry-duration">${l.duration_minutes}m</div>
+        <button class="btn-danger btn-sm" onclick="deleteSaunaLog('${l.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function saveSaunaLog() {
+  const date = document.getElementById('sauna-date').value;
+  const duration = parseInt(document.getElementById('sauna-duration').value);
+  if (!date || !duration || duration < 1) { showToast('Enter a valid date and duration', 'error'); return; }
+
+  const { data, error } = await db.from('sauna_logs').insert({ date, duration_minutes: duration }).select().single();
+  if (error || !data) { showToast('Failed to save session', 'error'); return; }
+
+  state.saunaLogs.unshift(data);
+  document.getElementById('sauna-duration').value = '';
+  renderSaunaTab();
+  showToast('Sauna session logged!');
+}
+
+async function deleteSaunaLog(id) {
+  await db.from('sauna_logs').delete().eq('id', id);
+  state.saunaLogs = state.saunaLogs.filter(l => l.id !== id);
+  renderSaunaTab();
+}
+
+async function retrySaunaLoad() {
+  const { data, error } = await db.from('sauna_logs').select('*').order('date', { ascending: false });
+  if (error) { showToast('Table not found — run the SQL first', 'error'); return; }
+  state.saunaLogs = data || [];
+  renderSaunaTab();
 }
 
 // ==========================================

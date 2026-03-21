@@ -555,6 +555,17 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .status-badge.in_progress { background: var(--ai-dim); color: var(--ai-light); }
 .status-badge.completed { background: var(--success-dim); color: var(--success); }
 
+.course-section-divider {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
 .course-meta {
   display: flex;
   justify-content: space-between;

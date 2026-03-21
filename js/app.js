@@ -208,11 +208,26 @@ function resetSetup() {
   document.getElementById('setup-screen').style.display = 'flex';
 }
 
+async function ensureMitreAtlas() {
+  const existing = state.courses.find(c => c.name === 'MITRE ATLAS');
+  if (existing) return;
+  const maxOrder = state.courses.reduce((m, c) => Math.max(m, c.order_index || 0), -1);
+  const { data } = await db.from('courses').insert({
+    name: 'MITRE ATLAS',
+    platform: 'MITRE',
+    description: 'Adversarial Threat Landscape for AI Systems. Reading during work.',
+    status: 'in_progress',
+    order_index: maxOrder + 1,
+  }).select().single();
+  if (data) { state.courses.push(data); state.courses.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)); }
+}
+
 async function launchApp(url, key) {
   try {
     db = window.supabase.createClient(url, key);
     await seedDataIfEmpty();
     await loadAllData();
+    await ensureMitreAtlas();
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('app').classList.remove('hidden');
     updateSidebarDate();
@@ -434,12 +449,11 @@ function renderCourseGrid() {
     return;
   }
 
-  grid.innerHTML = state.courses.map(course => {
+  const renderCard = course => {
     const logs = state.studyLogs.filter(l => l.course_id === course.id);
     const totalMin = logs.reduce((s, l) => s + (l.duration_minutes || 0), 0);
     const totalHours = (totalMin / 60).toFixed(1);
     const statusLabel = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Done' }[course.status] || course.status;
-
     return `
       <div class="course-card status-${course.status}" onclick="openCourseLogs('${course.id}')">
         <div class="course-card-header">
@@ -462,7 +476,17 @@ function renderCourseGrid() {
         </div>
       </div>
     `;
-  }).join('');
+  };
+
+  const active = state.courses.filter(c => c.status !== 'not_started');
+  const notStarted = state.courses.filter(c => c.status === 'not_started');
+
+  let html = active.map(renderCard).join('');
+  if (notStarted.length) {
+    html += `<div class="course-section-divider" style="grid-column:1/-1">Not Yet Started</div>`;
+    html += notStarted.map(renderCard).join('');
+  }
+  grid.innerHTML = html;
 }
 
 async function setCourseStatus(courseId, status) {
@@ -635,12 +659,19 @@ function prefillEntryForDate(date) {
 }
 
 function renderFitnessStats() {
+  const today = todayStr();
+  const dow = (new Date().getDay() + 6) % 7;
+  const thisWeekStart = addDays(today, -dow);
+  const thisWeekLogs = state.weightLogs.filter(l => l.date >= thisWeekStart && l.date <= today);
+  const weekAvg = thisWeekLogs.length
+    ? (thisWeekLogs.reduce((s, l) => s + parseFloat(l.weight), 0) / thisWeekLogs.length).toFixed(1)
+    : null;
   const latest = state.weightLogs.length ? state.weightLogs[state.weightLogs.length - 1] : null;
   const wow = getWeekOverWeekWeight();
   const wowHtml = wow
     ? `<div class="stat-wow" style="color:${parseFloat(wow.delta) < 0 ? 'var(--success)' : parseFloat(wow.delta) > 0 ? 'var(--fitness)' : 'var(--text-dim)'}">${parseFloat(wow.delta) > 0 ? '+' : ''}${wow.delta} kg vs last wk</div>`
     : '';
-  document.getElementById('current-weight').innerHTML = (latest ? latest.weight + ' kg' : '—') + wowHtml;
+  document.getElementById('current-weight').innerHTML = (weekAvg ? weekAvg + ' kg' : latest ? latest.weight + ' kg' : '—') + wowHtml;
 
   const { tdee, confidence, dataPoints } = calculateAdaptiveTDEE();
   if (tdee) {
@@ -655,7 +686,7 @@ function renderFitnessStats() {
   }
 
   const deficit = state.selectedDeficit;
-  document.getElementById('deficit-display').textContent = tdee ? `-${deficit} kcal` : '—';
+  document.getElementById('deficit-display').textContent = `-${deficit} kcal`;
   document.getElementById('target-cals').textContent = tdee ? (tdee - deficit) + ' kcal' : '—';
 }
 

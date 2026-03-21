@@ -96,8 +96,11 @@ CREATE TABLE IF NOT EXISTS sauna_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   date DATE NOT NULL,
   duration_minutes INTEGER NOT NULL,
+  protocol TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- If you already ran the old version of this table, run this too:
+ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;
 
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE courses DISABLE ROW LEVEL SECURITY;
@@ -860,6 +863,33 @@ async function selectDeficit(deficit) {
 // SAUNA TRACKER
 // ==========================================
 
+const SAUNA_PROTOCOLS = [
+  {
+    id: 'base', name: 'Base Session', structure: '1 × 20 min', duration: 20, tag: 'Daily driver',
+    benefits: ['Cortisol reset (~30% drop)', 'Improved sleep onset', 'Cardiovascular maintenance', 'Muscle relaxation & recovery'],
+  },
+  {
+    id: 'double', name: 'Double Round', structure: '2 × 15 min + cold break', duration: 30, tag: '2–3× per week',
+    benefits: ['2–5× growth hormone baseline', 'Norepinephrine boost from cold contrast', 'Stronger cardiovascular training effect'],
+  },
+  {
+    id: 'gh', name: 'GH Protocol', structure: '2 × 20 min + cold shower', duration: 40, tag: '1–2× per week',
+    benefits: ['Maximum GH spike for session length', 'Directly supports muscle retention on cut', 'Enhanced fat oxidation post-session'],
+  },
+  {
+    id: 'contrast', name: 'Contrast Protocol', structure: '3 × 12 min, heat/cold alternating', duration: 36, tag: 'Once per week',
+    benefits: ['Peak cardiovascular adaptation', 'Largest norepinephrine surge (focus & mood)', 'Immune system activation'],
+  },
+  {
+    id: 'recovery', name: 'Recovery Session', structure: '1 × 15 min', duration: 15, tag: 'Post-training',
+    benefits: ['Targets muscle inflammation specifically', 'Accelerates lactic acid clearance', 'Parasympathetic activation (rest & digest)'],
+  },
+  {
+    id: 'deep', name: 'Deep Heat', structure: '1 × 30 min', duration: 30, tag: 'Once per week',
+    benefits: ['Maximum HSP70 production', 'Cellular stress protection', 'Deeper cardiovascular adaptation'],
+  },
+];
+
 const SAUNA_MILESTONES = [
   { sessions: 1,  desc: 'Acute cortisol drop (~30%), endorphin release, deep muscle relaxation.' },
   { sessions: 5,  desc: 'Improved sleep onset and quality, better recovery from training.' },
@@ -905,6 +935,29 @@ function renderSaunaTab() {
   document.getElementById('sauna-this-month').textContent = thisMonthCount || '—';
   document.getElementById('sauna-avg-duration').textContent = avgMin ? avgMin + 'm' : '—';
 
+  const dow = (new Date().getDay() + 6) % 7;
+  const thisWeekStart = addDays(todayStr(), -dow);
+  document.getElementById('sauna-protocols').innerHTML = SAUNA_PROTOCOLS.map(p => {
+    const weekCount = logs.filter(l => l.protocol === p.id && l.date >= thisWeekStart).length;
+    return `
+      <div class="protocol-card">
+        <div class="protocol-card-header">
+          <div class="protocol-name">${p.name}</div>
+          <span class="protocol-tag">${p.tag}</span>
+        </div>
+        <div class="protocol-structure">${p.structure}</div>
+        <ul class="protocol-benefits-list">
+          ${p.benefits.map(b => `<li>${b}</li>`).join('')}
+        </ul>
+        <div class="protocol-footer">
+          ${weekCount > 0
+            ? `<span class="protocol-week-count">✓ ${weekCount}× this week</span>`
+            : '<span></span>'}
+          <button class="btn-primary btn-sm" onclick="logSaunaProtocol('${p.id}', ${p.duration})">Log</button>
+        </div>
+      </div>`;
+  }).join('');
+
   document.getElementById('sauna-benefits').innerHTML = SAUNA_MILESTONES.map(m => {
     const unlocked = totalSessions >= m.sessions;
     const remaining = m.sessions - totalSessions;
@@ -928,16 +981,31 @@ function renderSaunaTab() {
     historyEl.innerHTML = '<div class="no-logs">No sessions yet. Log your first sauna visit above.</div>';
     return;
   }
-  historyEl.innerHTML = logs.map(l => `
+  historyEl.innerHTML = logs.map(l => {
+    const proto = l.protocol ? SAUNA_PROTOCOLS.find(p => p.id === l.protocol) : null;
+    return `
     <div class="log-entry">
       <div class="log-entry-left">
         <div class="log-entry-date">${formatDateDisplay(l.date)}</div>
+        ${proto ? `<div class="log-entry-notes">${proto.name}</div>` : ''}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <div class="log-entry-duration">${l.duration_minutes}m</div>
         <button class="btn-danger btn-sm" onclick="deleteSaunaLog('${l.id}')">✕</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+async function logSaunaProtocol(protocolId, duration) {
+  const date = document.getElementById('sauna-date').value || todayStr();
+  const { data, error } = await db.from('sauna_logs').insert({ date, duration_minutes: duration, protocol: protocolId }).select().single();
+  if (error || !data) { showToast('Failed to log session', 'error'); return; }
+  state.saunaLogs.unshift(data);
+  state.saunaLogs.sort((a, b) => b.date.localeCompare(a.date));
+  renderSaunaTab();
+  const name = SAUNA_PROTOCOLS.find(p => p.id === protocolId)?.name || 'Session';
+  showToast(`${name} logged!`);
 }
 
 async function saveSaunaLog() {
@@ -949,9 +1017,10 @@ async function saveSaunaLog() {
   if (error || !data) { showToast('Failed to save session', 'error'); return; }
 
   state.saunaLogs.unshift(data);
+  state.saunaLogs.sort((a, b) => b.date.localeCompare(a.date));
   document.getElementById('sauna-duration').value = '';
   renderSaunaTab();
-  showToast('Sauna session logged!');
+  showToast('Custom session logged!');
 }
 
 async function deleteSaunaLog(id) {

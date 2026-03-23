@@ -345,7 +345,7 @@ ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;</pre>
             <div class="card">
               <div class="card-header">
                 <h3>Log Session</h3>
-                <span style="font-size:0.75rem;color:var(--text-muted)">Date applies to all logs below</span>
+                <span style="font-size:0.75rem;color:var(--text-muted)">Change date to log a past session</span>
               </div>
               <div class="sauna-form">
                 <div class="entry-field">
@@ -394,6 +394,9 @@ ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;</pre>
               <div class="card-header"><h3>Session History</h3></div>
               <div id="sauna-history" class="sauna-history-list"></div>
             </div>
+
+            <!-- Pre-tracker foundation entry (JS rendered) -->
+            <div id="sauna-foundation-entry"></div>
 
           </div><!-- /sauna-main-content -->
 

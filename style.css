@@ -1331,7 +1331,25 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   .main-content {
     margin-left: 0;
     padding: 16px 16px calc(var(--bottom-nav-h) + 16px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
     max-width: 100%;
+  }
+
+  .fitness-tabs {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--bg);
+    padding: 10px 0 10px;
+    margin: -4px -16px 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fitness-tab {
+    padding: 10px 24px;
+    font-size: 0.9rem;
   }
 
   .course-grid { grid-template-columns: 1fr; }

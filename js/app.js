@@ -933,6 +933,7 @@ function renderDaySchedule() {
 }
 
 async function logDayType(typeId) {
+  if (state.dayLogs === null) { showToast('Run the setup SQL first — day_logs table missing', 'error'); return; }
   const date = document.getElementById('sauna-date').value || todayStr();
   const existing = (state.dayLogs || []).find(l => l.date === date);
   let data, error;
@@ -996,7 +997,7 @@ function renderSaunaTab() {
   const notice = document.getElementById('sauna-setup-notice');
   const main = document.getElementById('sauna-main-content');
 
-  if (state.saunaLogs === null) {
+  if (state.saunaLogs === null || state.dayLogs === null) {
     notice.classList.remove('hidden');
     main.classList.add('hidden');
     return;
@@ -1106,11 +1107,59 @@ function renderSaunaTab() {
   }
 
   historyEl.innerHTML = historyHtml;
+
+  const foundationEl = document.getElementById('sauna-foundation-entry');
+  if (!foundationLogs.length) {
+    const defaultDate = addDays(todayStr(), -365);
+    foundationEl.innerHTML = `
+      <div class="card" style="border-style:dashed">
+        <div class="card-header">
+          <h3>Pre-Tracker Sessions</h3>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px">Had sessions before you started tracking? Add them here — they'll appear as a Foundation block in your history and count towards your milestones.</p>
+        <div class="sauna-form" style="flex-wrap:wrap">
+          <div class="entry-field">
+            <label>Number of sessions</label>
+            <input type="number" id="foundation-count" min="1" max="999" placeholder="e.g. 40">
+          </div>
+          <div class="entry-field">
+            <label>Avg duration (min)</label>
+            <input type="number" id="foundation-duration" min="5" max="180" step="5" placeholder="e.g. 20">
+          </div>
+          <div class="entry-field">
+            <label>Approx. date</label>
+            <input type="date" id="foundation-date" value="${defaultDate}">
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="logFoundationSessions()" style="margin-top:14px">Add as Foundation</button>
+      </div>`;
+  } else {
+    foundationEl.innerHTML = '';
+  }
+}
+
+async function logFoundationSessions() {
+  const count = parseInt(document.getElementById('foundation-count').value);
+  const duration = parseInt(document.getElementById('foundation-duration').value);
+  const date = document.getElementById('foundation-date').value;
+  if (!count || count < 1 || !duration || duration < 1 || !date) {
+    showToast('Fill in all three fields', 'error'); return;
+  }
+  const rows = Array.from({ length: count }, () => ({ date, duration_minutes: duration, protocol: 'foundation' }));
+  const { data, error } = await db.from('sauna_logs').insert(rows).select();
+  if (error || !data) { showToast('Failed to save foundation sessions', 'error'); return; }
+  state.saunaLogs = [...state.saunaLogs, ...data].sort((a, b) => b.date.localeCompare(a.date));
+  renderSaunaTab();
+  showToast(`${count} pre-tracker sessions added!`);
 }
 
 async function logSaunaProtocol(protocolId, duration) {
   const date = document.getElementById('sauna-date').value || todayStr();
-  const { data, error } = await db.from('sauna_logs').insert({ date, duration_minutes: duration, protocol: protocolId }).select().single();
+  let { data, error } = await db.from('sauna_logs').insert({ date, duration_minutes: duration, protocol: protocolId }).select().single();
+  if (error && (error.code === '42703' || (error.message || '').includes('protocol'))) {
+    // protocol column missing — run "ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;" in Supabase
+    ({ data, error } = await db.from('sauna_logs').insert({ date, duration_minutes: duration }).select().single());
+  }
   if (error || !data) { showToast('Failed to log session', 'error'); return; }
   state.saunaLogs.unshift(data);
   state.saunaLogs.sort((a, b) => b.date.localeCompare(a.date));

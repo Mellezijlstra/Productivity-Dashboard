@@ -1353,7 +1353,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   .week-dates { display: none; }
   .week-stats-pct { font-size: 1.6rem; }
   .today-digest-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .week-digest-grid { grid-template-columns: repeat(2, 1fr); }
+  .week-digest-grid { grid-template-columns: repeat(3, 1fr); }
   .timer-top { flex-direction: column; align-items: flex-start; gap: 12px; }
   .timer-controls { justify-content: flex-start; }
   .timer-select { max-width: 100%; width: 100%; }
@@ -1423,7 +1423,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 
 .week-digest-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }

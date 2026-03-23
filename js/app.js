@@ -1795,7 +1795,7 @@ function renderTodayDigest() {
     <div class="today-stat">
       <div class="today-stat-icon">🍽️</div>
       <div class="today-stat-value" style="color:${calColor}">${todayNutrition ? todayNutrition.calories+' kcal' : '—'}</div>
-      <div class="today-stat-label">${target ? 'Target: '+target : 'Calories'}</div>
+      <div class="today-stat-label">${target ? 'Target: '+target : 'Calories'}${todayNutrition ? ' · '+todayNutrition.protein+'g P' : ''}</div>
     </div>
     <div class="today-stat">
       <div class="today-stat-icon">✅</div>
@@ -1834,6 +1834,8 @@ function renderWeekDigest() {
   const weekStudyMin = state.studyLogs.filter(l => weekDates.includes(l.date)).reduce((s, l) => s + (l.duration_minutes || 0), 0);
   const wow = getWeekOverWeekWeight();
   const weekNutrition = state.nutritionLogs.filter(l => pastDates.includes(l.date));
+  const saunaThisWeek = (state.saunaLogs || []).filter(l => l.protocol !== 'foundation' && weekDates.includes(l.date)).length;
+  const weekProtein = weekNutrition.length ? Math.round(weekNutrition.reduce((s, l) => s + parseFloat(l.protein || 0), 0) / weekNutrition.length) : null;
   const avgCals = weekNutrition.length ? Math.round(weekNutrition.reduce((s, l) => s + l.calories, 0) / weekNutrition.length) : null;
   const { tdee } = calculateAdaptiveTDEE();
   const target = tdee ? tdee - state.selectedDeficit : null;
@@ -1871,6 +1873,16 @@ function renderWeekDigest() {
       <div class="digest-icon">✅</div>
       <div class="digest-value" style="color:${habitColor}">${habitTotal > 0 ? habitPct+'%' : '—'}</div>
       <div class="digest-label-text">Habit completion</div>
+    </div>
+    <div class="week-digest-card card">
+      <div class="digest-icon">🔥</div>
+      <div class="digest-value">${saunaThisWeek || '—'}</div>
+      <div class="digest-label-text">Sauna sessions</div>
+    </div>
+    <div class="week-digest-card card">
+      <div class="digest-icon">🥩</div>
+      <div class="digest-value">${weekProtein ? weekProtein+'g' : '—'}</div>
+      <div class="digest-label-text">Avg protein</div>
     </div>
   `;
 }

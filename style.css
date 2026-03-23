@@ -1335,18 +1335,6 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
     max-width: 100%;
   }
 
-  .fitness-tabs {
-    position: sticky;
-    top: env(safe-area-inset-top, 0px);
-    z-index: 10;
-    background: var(--bg);
-    padding: 10px 0 10px;
-    margin: -4px -16px 16px;
-    padding-left: 16px;
-    padding-right: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
   .fitness-tab {
     padding: 10px 24px;
     font-size: 0.9rem;

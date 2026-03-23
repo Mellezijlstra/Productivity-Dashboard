@@ -117,7 +117,17 @@ ALTER TABLE nutrition_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE habits DISABLE ROW LEVEL SECURITY;
 ALTER TABLE habit_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE sauna_logs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE day_logs DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE day_logs DISABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS notes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  category TEXT NOT NULL DEFAULT 'daily',
+  date DATE NOT NULL,
+  title TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE notes DISABLE ROW LEVEL SECURITY;`;
 
 let db = null;
 let weightChart = null;
@@ -133,6 +143,8 @@ const state = {
   habits: [],
   habitLogs: [],
   todos: [],
+  notes: [],
+  notesTab: 'daily',
   settings: {},
   selectedDeficit: 500,
   currentWeekOffset: 0,
@@ -317,6 +329,9 @@ async function loadAllData() {
 
   const { data: dayLogs, error: dayErr } = await db.from('day_logs').select('*').order('date', { ascending: false });
   state.dayLogs = dayErr ? null : (dayLogs || []);
+
+  const { data: notes, error: notesErr } = await db.from('notes').select('*').order('created_at', { ascending: false });
+  state.notes = notesErr ? null : (notes || []);
 }
 
 async function saveSetting(key, value) {
@@ -339,6 +354,7 @@ function navigate(section) {
   if (section === 'ai') renderAI();
   if (section === 'fitness') renderFitness();
   if (section === 'habits') renderHabits();
+  if (section === 'notes') renderNotes();
 }
 
 function updateSidebarDate() {
@@ -1196,6 +1212,121 @@ async function retrySaunaLoad() {
   const { data: dl, error: dlErr } = await db.from('day_logs').select('*').order('date', { ascending: false });
   state.dayLogs = dlErr ? null : (dl || []);
   renderSaunaTab();
+}
+
+// ==========================================
+// NOTES / JOURNAL
+// ==========================================
+
+function switchNotesTab(tab) {
+  state.notesTab = tab;
+  document.querySelectorAll('.notes-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderNotes();
+}
+
+function renderNotes() {
+  const notice = document.getElementById('notes-setup-notice');
+  const main = document.getElementById('notes-main-content');
+  if (state.notes === null) {
+    notice.classList.remove('hidden');
+    main.classList.add('hidden');
+    return;
+  }
+  notice.classList.add('hidden');
+  main.classList.remove('hidden');
+  if (state.notesTab === 'daily') renderDailyNotes(main);
+  else renderInsightNotes(main);
+}
+
+function renderDailyNotes(el) {
+  const today = todayStr();
+  const todayEntry = state.notes.find(n => n.category === 'daily' && n.date === today);
+  const past = state.notes
+    .filter(n => n.category === 'daily' && n.date !== today)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3>Today</h3>
+        <span style="font-size:0.8rem;color:var(--text-muted)">${formatDateDisplay(today)}</span>
+      </div>
+      <textarea id="note-daily-input" class="note-textarea" placeholder="What's on your mind? Reflections, observations, how the day went...">${todayEntry ? todayEntry.content : ''}</textarea>
+      <button class="btn-secondary" onclick="saveNote('daily')" style="margin-top:12px">${todayEntry ? 'Update' : 'Save'}</button>
+    </div>
+    ${past.length ? `<div class="notes-history">${past.map(n => `
+      <div class="note-entry card">
+        <div class="note-entry-header">
+          <span class="note-entry-date">${formatDateDisplay(n.date)}</span>
+          <button class="btn-danger btn-sm" onclick="deleteNote('${n.id}')">✕</button>
+        </div>
+        <div class="note-entry-content">${n.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>
+      </div>`).join('')}</div>` : ''}`;
+}
+
+function renderInsightNotes(el) {
+  const insights = state.notes
+    .filter(n => n.category === 'insights')
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header"><h3>New Insight</h3></div>
+      <input type="text" id="note-insight-title" class="note-title-input" placeholder="Title (optional)">
+      <textarea id="note-insight-input" class="note-textarea" placeholder="Capture an insight, idea, or observation..."></textarea>
+      <button class="btn-secondary" onclick="saveNote('insights')" style="margin-top:12px">Add Insight</button>
+    </div>
+    ${insights.length ? `<div class="notes-history">${insights.map(n => `
+      <div class="note-entry card">
+        <div class="note-entry-header">
+          <div>
+            ${n.title ? `<div class="note-entry-title">${n.title.replace(/</g,'&lt;')}</div>` : ''}
+            <span class="note-entry-date">${formatDateDisplay(n.date)}</span>
+          </div>
+          <button class="btn-danger btn-sm" onclick="deleteNote('${n.id}')">✕</button>
+        </div>
+        <div class="note-entry-content">${n.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>
+      </div>`).join('')}</div>` : '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:16px">No insights yet. Add your first one above.</p>'}`;
+}
+
+async function saveNote(category) {
+  const today = todayStr();
+  if (category === 'daily') {
+    const content = document.getElementById('note-daily-input').value.trim();
+    if (!content) { showToast('Write something first', 'error'); return; }
+    const existing = state.notes.find(n => n.category === 'daily' && n.date === today);
+    if (existing) {
+      const { data, error } = await db.from('notes').update({ content }).eq('id', existing.id).select().single();
+      if (error) { showToast('Failed to save', 'error'); return; }
+      existing.content = data.content;
+    } else {
+      const { data, error } = await db.from('notes').insert({ category, date: today, content }).select().single();
+      if (error) { showToast('Failed to save', 'error'); return; }
+      state.notes.unshift(data);
+    }
+  } else {
+    const content = document.getElementById('note-insight-input').value.trim();
+    const title = document.getElementById('note-insight-title').value.trim() || null;
+    if (!content) { showToast('Write something first', 'error'); return; }
+    const { data, error } = await db.from('notes').insert({ category, date: today, title, content }).select().single();
+    if (error) { showToast('Failed to save', 'error'); return; }
+    state.notes.unshift(data);
+  }
+  renderNotes();
+  showToast('Saved!');
+}
+
+async function deleteNote(id) {
+  await db.from('notes').delete().eq('id', id);
+  state.notes = state.notes.filter(n => n.id !== id);
+  renderNotes();
+}
+
+async function retryNotesLoad() {
+  const { data, error } = await db.from('notes').select('*').order('created_at', { ascending: false });
+  if (error) { showToast('notes table not found — run the SQL first', 'error'); return; }
+  state.notes = data || [];
+  renderNotes();
 }
 
 // ==========================================

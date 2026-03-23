@@ -83,6 +83,10 @@
           <span class="nav-icon">✅</span>
           <span>Habits</span>
         </button>
+        <button class="nav-btn" data-section="notes" onclick="navigate('notes')">
+          <span class="nav-icon">📝</span>
+          <span>Notes</span>
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-date" id="sidebar-date"></div>
@@ -445,6 +449,33 @@ ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;</pre>
 
       </section>
 
+      <!-- ===== NOTES SECTION ===== -->
+      <section id="notes-section" class="section hidden">
+
+        <div class="notes-tabs">
+          <button class="notes-tab active" data-tab="daily" onclick="switchNotesTab('daily')">Daily Reflection</button>
+          <button class="notes-tab" data-tab="insights" onclick="switchNotesTab('insights')">Insights</button>
+        </div>
+
+        <div id="notes-setup-notice" class="card hidden">
+          <div class="card-header"><h3>Setup Required</h3></div>
+          <p style="font-size:0.85rem;margin-bottom:12px">Run this in your Supabase SQL Editor to enable notes:</p>
+          <pre class="sql-preview" style="font-size:0.75rem;margin-bottom:12px">CREATE TABLE IF NOT EXISTS notes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  category TEXT NOT NULL DEFAULT 'daily',
+  date DATE NOT NULL,
+  title TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE notes DISABLE ROW LEVEL SECURITY;</pre>
+          <button class="btn-secondary btn-sm" onclick="retryNotesLoad()">Retry</button>
+        </div>
+
+        <div id="notes-main-content"></div>
+
+      </section>
+
     </main>
 
     <!-- Bottom nav (mobile) -->
@@ -464,6 +495,10 @@ ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;</pre>
       <button class="bottom-nav-btn" data-section="habits" onclick="navigate('habits')">
         <span class="bnav-icon">✅</span>
         <span class="bnav-label">Habits</span>
+      </button>
+      <button class="bottom-nav-btn" data-section="notes" onclick="navigate('notes')">
+        <span class="bnav-icon">📝</span>
+        <span class="bnav-label">Notes</span>
       </button>
     </nav>
 

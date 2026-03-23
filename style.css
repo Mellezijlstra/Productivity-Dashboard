@@ -29,6 +29,11 @@
   --sauna-dim:    #450a0a;
   --sauna-glow:   rgba(220, 38, 38, 0.15);
 
+  --notes:        #10b981;
+  --notes-light:  #34d399;
+  --notes-dim:    #064e3b;
+  --notes-glow:   rgba(16, 185, 129, 0.15);
+
   --success:      #22c55e;
   --success-dim:  #14532d;
   --warning:      #f59e0b;
@@ -327,6 +332,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .nav-btn.active { background: var(--ai-dim); color: var(--ai-light); }
 .nav-btn[data-section="fitness"].active { background: var(--fitness-dim); color: var(--fitness-light); }
 .nav-btn[data-section="habits"].active { background: var(--habits-dim); color: var(--habits-light); }
+.nav-btn[data-section="notes"].active  { background: var(--notes-dim);  color: var(--notes-light); }
 
 .nav-icon { font-size: 1.1rem; }
 
@@ -386,6 +392,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .bottom-nav-btn.active { color: var(--ai-light); }
 .bottom-nav-btn[data-section="fitness"].active { color: var(--fitness-light); }
 .bottom-nav-btn[data-section="habits"].active { color: var(--habits-light); }
+.bottom-nav-btn[data-section="notes"].active  { color: var(--notes-light); }
 
 /* ==========================================
    Cards
@@ -611,6 +618,98 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .entry-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .entry-card-header h3 { font-size: 1rem; }
 .entry-date { font-size: 0.8rem; color: var(--text-muted); }
+
+/* ==========================================
+   Notes / Journal
+   ========================================== */
+.notes-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.notes-tab {
+  padding: 8px 22px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.notes-tab.active {
+  background: var(--notes-dim);
+  color: var(--notes-light);
+  border-color: var(--notes);
+}
+.notes-tab:hover:not(.active) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.note-textarea {
+  width: 100%;
+  min-height: 140px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  padding: 12px 14px;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  display: block;
+}
+.note-textarea:focus {
+  outline: none;
+  border-color: var(--notes);
+  box-shadow: 0 0 0 3px var(--notes-glow);
+}
+.note-title-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 9px 14px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.note-title-input:focus {
+  outline: none;
+  border-color: var(--notes);
+  box-shadow: 0 0 0 3px var(--notes-glow);
+}
+.notes-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.note-entry { padding: 16px 20px; }
+.note-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.note-entry-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.note-entry-date { font-size: 0.75rem; color: var(--text-muted); }
+.note-entry-content {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
 
 /* ==========================================
    Fitness Tabs

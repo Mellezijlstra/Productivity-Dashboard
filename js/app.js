@@ -1552,7 +1552,53 @@ function renderNutrientGrid(loggedFoods, loggedSupps = []) {
   }).join('');
 
   const title = view === 'sauna' ? 'Sauna Recovery' : view === 'weekly' ? 'This Week' : 'Today';
-  return `<div class="card"><div class="card-header"><h3>${title}</h3></div><div class="nutrient-grid">${cards}</div></div>`;
+  const gridHtml = `<div class="card"><div class="card-header"><h3>${title}</h3></div><div class="nutrient-grid">${cards}</div></div>`;
+  return view === 'weekly' ? gridHtml + renderWeekDayLog() : gridHtml;
+}
+
+function shortNutrientName(n) {
+  return n.name.replace('Vitamin ', 'Vit ').replace(' (B9)', '').replace('Omega-3', 'Ω-3');
+}
+
+function renderWeekDayLog() {
+  const today = todayStr();
+  const dow = (new Date().getDay() + 6) % 7;
+  const weekStart = addDays(today, -dow);
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const dailyNutrients = MICRONUTRIENTS.filter(n => n.cat === 'daily');
+  const total = dailyNutrients.length;
+
+  const rows = dayNames.map((name, i) => {
+    const date = addDays(weekStart, i);
+    if (date > today) {
+      return `<div class="day-log-row future"><div class="day-log-header"><span class="day-log-name">${name}</span><span class="day-log-pct" style="color:var(--text-muted)">—</span></div></div>`;
+    }
+    const dayLogs = state.microLogs.filter(l => l.date === date).map(l => l.food);
+    const dayCovered = new Set();
+    dayLogs.forEach(id => {
+      const food = FOODS.find(f => f.id === id);
+      if (food) food.nutrients.forEach(n => dayCovered.add(n));
+      const supp = SUPPLEMENTS.find(s => s.id === id);
+      if (supp) supp.nutrients.forEach(n => dayCovered.add(n));
+    });
+    const covered = dailyNutrients.filter(n => dayCovered.has(n.id));
+    const missing  = dailyNutrients.filter(n => !dayCovered.has(n.id));
+    const pct = dayLogs.length ? Math.round((covered.length / total) * 100) : null;
+    const pctColor = pct === null ? 'var(--text-muted)' : pct >= 80 ? 'var(--micros)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+    return `
+      <div class="day-log-row">
+        <div class="day-log-header">
+          <span class="day-log-name">${name}</span>
+          <span class="day-log-pct" style="color:${pctColor}">${pct !== null ? pct+'%' : '—'}</span>
+        </div>
+        ${dayLogs.length ? `<div class="day-log-tags">
+          ${covered.map(n => `<span class="day-log-tag covered">${shortNutrientName(n)}</span>`).join('')}
+          ${missing.map(n  => `<span class="day-log-tag missing">${shortNutrientName(n)}</span>`).join('')}
+        </div>` : '<div style="font-size:0.72rem;color:var(--text-muted)">Nothing logged</div>'}
+      </div>`;
+  }).join('');
+
+  return `<div class="card" style="margin-top:0"><div class="card-header"><h3>Daily Breakdown</h3></div><div class="day-log">${rows}</div></div>`;
 }
 
 function getWeeklyNutrientCoverage() {

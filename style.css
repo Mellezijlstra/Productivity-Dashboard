@@ -805,6 +805,15 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   border-top: 1px solid var(--border);
   padding-top: 6px;
 }
+.day-log { display: flex; flex-direction: column; gap: 14px; }
+.day-log-row.future { opacity: 0.35; }
+.day-log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.day-log-name { font-size: 0.82rem; font-weight: 600; color: var(--text-dim); }
+.day-log-pct { font-size: 0.85rem; font-weight: 700; }
+.day-log-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.day-log-tag { font-size: 0.68rem; padding: 2px 8px; border-radius: 10px; }
+.day-log-tag.covered { background: var(--micros-dim); color: var(--micros-light); }
+.day-log-tag.missing { background: var(--surface-3); color: var(--text-muted); }
 
 /* ==========================================
    Fitness Tabs

@@ -34,6 +34,11 @@
   --notes-dim:    #064e3b;
   --notes-glow:   rgba(16, 185, 129, 0.15);
 
+  --micros:       #84cc16;
+  --micros-light: #a3e635;
+  --micros-dim:   #1a2e05;
+  --micros-glow:  rgba(132, 204, 22, 0.15);
+
   --success:      #22c55e;
   --success-dim:  #14532d;
   --warning:      #f59e0b;
@@ -712,6 +717,91 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 }
 
 /* ==========================================
+   Micro Nutrients
+   ========================================== */
+.micros-view-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.micros-view-tab {
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.micros-view-tab.active {
+  background: var(--micros-dim);
+  color: var(--micros-light);
+  border-color: var(--micros);
+}
+.food-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.food-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.food-chip.logged {
+  background: var(--micros-dim);
+  border-color: var(--micros);
+  color: var(--micros-light);
+}
+.nutrient-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.nutrient-card {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.nutrient-card.covered {
+  border-color: var(--micros);
+  background: var(--micros-dim);
+}
+.nutrient-card.partial {
+  border-color: var(--warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+.nutrient-card.supp {
+  border-color: var(--ai);
+  background: var(--ai-dim);
+}
+.nutrient-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.nutrient-name { font-size: 0.77rem; font-weight: 600; color: var(--text); }
+.nutrient-status { font-size: 0.7rem; color: var(--text-muted); }
+.nutrient-info-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  flex-shrink: 0;
+}
+.nutrient-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+/* ==========================================
    Fitness Tabs
    ========================================== */
 .fitness-tabs {
@@ -739,6 +829,11 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   background: var(--sauna-dim);
   color: var(--sauna-light);
   border-color: var(--sauna);
+}
+.fitness-tab[data-tab="micros"].active {
+  background: var(--micros-dim);
+  color: var(--micros-light);
+  border-color: var(--micros);
 }
 .fitness-tab:hover:not(.active) {
   background: var(--surface-3);
@@ -1435,9 +1530,12 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   }
 
   .fitness-tab {
-    padding: 10px 24px;
-    font-size: 0.9rem;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    flex: 1;
+    text-align: center;
   }
+  .nutrient-grid { grid-template-columns: repeat(2, 1fr); }
 
   .course-grid { grid-template-columns: 1fr; }
   .planner-row { grid-template-columns: 1fr; }

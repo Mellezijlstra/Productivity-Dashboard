@@ -127,10 +127,94 @@ CREATE TABLE IF NOT EXISTS notes (
   content TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-ALTER TABLE notes DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE notes DISABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS micro_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL,
+  food TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE micro_logs DISABLE ROW LEVEL SECURITY;`;
 
 let db = null;
 let weightChart = null;
+
+// ==========================================
+// MICRO NUTRIENT DATA
+// ==========================================
+
+const FOODS = [
+  // Your common foods
+  { id: 'avocado',       name: 'Avocado',        emoji: '🥑', nutrients: ['potassium','vitK','folate','vitB6','vitE','copper'] },
+  { id: 'chicken',       name: 'Chicken',         emoji: '🍗', nutrients: ['vitB6','vitB12','zinc','selenium','iron'] },
+  { id: 'kiwi',          name: 'Kiwi',            emoji: '🥝', nutrients: ['vitC','vitK','potassium','folate','copper'] },
+  { id: 'apple',         name: 'Apple',            emoji: '🍎', nutrients: ['vitC','potassium'] },
+  { id: 'carrot',        name: 'Carrot',           emoji: '🥕', nutrients: ['vitA','vitK','potassium','vitB6'] },
+  { id: 'rice',          name: 'Rice',             emoji: '🍚', nutrients: ['manganese','vitB6'] },
+  { id: 'sweetpotato',   name: 'Sweet Potato',     emoji: '🍠', nutrients: ['vitA','potassium','vitC','manganese','vitB6'] },
+  { id: 'pecorino',      name: 'Pecorino',         emoji: '🧀', nutrients: ['calcium','zinc','vitB12','vitA','iodine'] },
+  { id: 'parmesan',      name: 'Parmesan',         emoji: '🧀', nutrients: ['calcium','zinc','vitB12'] },
+  { id: 'eggs',          name: 'Eggs',             emoji: '🥚', nutrients: ['vitB12','vitD','selenium','choline','vitA','iodine','vitB6'] },
+  { id: 'driedapricot',  name: 'Dried Apricot',    emoji: '🍑', nutrients: ['iron','potassium','vitA','copper','vitE'] },
+  { id: 'hazelnuts',     name: 'Hazelnuts',        emoji: '🌰', nutrients: ['vitE','manganese','copper','vitB6','folate','magnesium'] },
+  { id: 'brazilnut',     name: 'Brazil Nut',       emoji: '🌰', nutrients: ['selenium','magnesium','zinc','copper'] },
+  { id: 'almonds',       name: 'Almonds',          emoji: '🌰', nutrients: ['vitE','magnesium','calcium','manganese','copper'] },
+  { id: 'grapefruit',    name: 'Grapefruit',       emoji: '🍊', nutrients: ['vitC','potassium','folate','vitA'] },
+  { id: 'kefir',         name: 'Kefir',            emoji: '🥛', nutrients: ['calcium','vitB12','iodine','potassium','vitK','zinc'] },
+  { id: 'oliveoil',      name: 'Olive Oil',        emoji: '🫒', nutrients: ['vitE','vitK'] },
+  // Suggested additions
+  { id: 'sardines',      name: 'Sardines',         emoji: '🐟', nutrients: ['omega3','vitD','vitB12','calcium','selenium','zinc','iron'] },
+  { id: 'salmon',        name: 'Salmon',           emoji: '🐠', nutrients: ['omega3','vitD','vitB12','vitB6','selenium','potassium'] },
+  { id: 'spinach',       name: 'Spinach',          emoji: '🥬', nutrients: ['iron','vitK','folate','magnesium','calcium','vitA','manganese'] },
+  { id: 'pumpkinseeds',  name: 'Pumpkin Seeds',    emoji: '🫘', nutrients: ['zinc','magnesium','iron','copper','manganese'] },
+  { id: 'darkchocolate', name: 'Dark Chocolate',   emoji: '🍫', nutrients: ['magnesium','iron','copper','manganese','zinc'] },
+  { id: 'lentils',       name: 'Lentils',          emoji: '🫘', nutrients: ['iron','folate','vitB6','potassium','zinc','copper','manganese'] },
+  { id: 'banana',        name: 'Banana',           emoji: '🍌', nutrients: ['potassium','vitB6','manganese','magnesium'] },
+];
+
+const MICRONUTRIENTS = [
+  // Daily
+  { id: 'vitC',      name: 'Vitamin C',   cat: 'daily',  sauna: true,  supplement: null,
+    desc: 'Antioxidant and immune defence. Counters oxidative stress from heat — especially relevant post-sauna.' },
+  { id: 'vitA',      name: 'Vitamin A',   cat: 'daily',  sauna: false, supplement: '250µg via Möller (partial)',
+    desc: 'Vision, skin health, immune function and mucous membrane integrity.' },
+  { id: 'vitB6',     name: 'Vitamin B6',  cat: 'daily',  sauna: false, supplement: null,
+    desc: 'Protein metabolism, neurotransmitter production. Supports mood and energy regulation.' },
+  { id: 'vitB12',    name: 'Vitamin B12', cat: 'daily',  sauna: false, supplement: null,
+    desc: 'Nerve function, red blood cell formation, and energy metabolism.' },
+  { id: 'iron',      name: 'Iron',        cat: 'daily',  sauna: false, supplement: null,
+    desc: 'Oxygen transport in blood. Low iron leads to fatigue and poor endurance.' },
+  { id: 'zinc',      name: 'Zinc',        cat: 'daily',  sauna: true,  supplement: null,
+    desc: 'Immune function, testosterone support, wound healing. Lost through sweat — sauna relevant.' },
+  { id: 'potassium', name: 'Potassium',   cat: 'daily',  sauna: true,  supplement: null,
+    desc: 'Key electrolyte for muscle contraction and heart rhythm. Depleted heavily in sauna sessions.' },
+  { id: 'calcium',   name: 'Calcium',     cat: 'daily',  sauna: false, supplement: null,
+    desc: 'Bone density, muscle contraction, nerve signalling.' },
+  { id: 'iodine',    name: 'Iodine',      cat: 'daily',  sauna: false, supplement: null,
+    desc: 'Thyroid hormone production and metabolic rate regulation.' },
+  { id: 'magnesium', name: 'Magnesium',   cat: 'daily',  sauna: true,  supplement: 'Bisglycinate 150mg (planned)',
+    desc: 'Muscle relaxation, sleep quality, 300+ enzyme reactions. Lost heavily through sweat in sauna.' },
+  { id: 'vitD',      name: 'Vitamin D',   cat: 'daily',  sauna: false, supplement: '60µg total — covered', suppFull: true,
+    desc: 'Bone health, immune modulation, mood regulation, and muscle recovery support.' },
+  // Weekly
+  { id: 'folate',    name: 'Folate (B9)', cat: 'weekly', sauna: false, supplement: null,
+    desc: 'DNA synthesis and repair, cell growth. Critical for long-term cellular health.' },
+  { id: 'vitK',      name: 'Vitamin K',   cat: 'weekly', sauna: false, supplement: null,
+    desc: 'Blood clotting and bone mineralisation. K2 in kefir directs calcium to bones, not arteries.' },
+  { id: 'selenium',  name: 'Selenium',    cat: 'weekly', sauna: true,  supplement: null,
+    desc: 'Powerful antioxidant, thyroid function, DNA repair. Brazil nuts are the richest food source.' },
+  { id: 'copper',    name: 'Copper',      cat: 'weekly', sauna: false, supplement: null,
+    desc: 'Iron absorption, collagen formation, antioxidant enzyme production.' },
+  { id: 'manganese', name: 'Manganese',   cat: 'weekly', sauna: false, supplement: null,
+    desc: 'Bone formation, antioxidant defence, carbohydrate and amino acid metabolism.' },
+  { id: 'choline',   name: 'Choline',     cat: 'weekly', sauna: false, supplement: null,
+    desc: 'Liver function, brain health, cell membrane integrity. Eggs are your primary source.' },
+  { id: 'vitE',      name: 'Vitamin E',   cat: 'weekly', sauna: true,  supplement: '3mg via Möller (partial, RDA 15mg)',
+    desc: 'Fat-soluble antioxidant protecting cell membranes. Reduces oxidative stress post-sauna.' },
+  { id: 'omega3',    name: 'Omega-3',     cat: 'weekly', sauna: true,  supplement: '1110mg via Möller — covered', suppFull: true,
+    desc: 'Anti-inflammatory, cardiovascular health, brain function. Reduces inflammation after sauna.' },
+];
 
 const state = {
   saunaLogs: [],
@@ -145,6 +229,8 @@ const state = {
   todos: [],
   notes: [],
   notesTab: 'daily',
+  microLogs: [],
+  microsTab: 'daily',
   settings: {},
   selectedDeficit: 500,
   currentWeekOffset: 0,
@@ -332,6 +418,9 @@ async function loadAllData() {
 
   const { data: notes, error: notesErr } = await db.from('notes').select('*').order('created_at', { ascending: false });
   state.notes = notesErr ? null : (notes || []);
+
+  const { data: microLogs, error: microErr } = await db.from('micro_logs').select('*').order('date', { ascending: false });
+  state.microLogs = microErr ? null : (microLogs || []);
 }
 
 async function saveSetting(key, value) {
@@ -1007,6 +1096,7 @@ function switchFitnessTab(tab) {
   document.querySelectorAll('.fitness-tab-pane').forEach(p => p.classList.add('hidden'));
   document.getElementById(`fitness-tab-${tab}`).classList.remove('hidden');
   if (tab === 'sauna') renderSaunaTab();
+  if (tab === 'micros') renderMicroTab();
 }
 
 function renderSaunaTab() {
@@ -1327,6 +1417,159 @@ async function retryNotesLoad() {
   if (error) { showToast('notes table not found — run the SQL first', 'error'); return; }
   state.notes = data || [];
   renderNotes();
+}
+
+// ==========================================
+// MICRO NUTRIENTS
+// ==========================================
+
+function switchMicrosView(view) {
+  state.microsTab = view;
+  document.querySelectorAll('.micros-view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  renderMicroContent();
+}
+
+function renderMicroTab() {
+  const notice = document.getElementById('micros-setup-notice');
+  const main = document.getElementById('micros-main-content');
+  if (state.microLogs === null) {
+    notice.classList.remove('hidden');
+    main.classList.add('hidden');
+    return;
+  }
+  notice.classList.add('hidden');
+  main.classList.remove('hidden');
+  renderMicroContent();
+}
+
+function renderMicroContent() {
+  const main = document.getElementById('micros-main-content');
+  const today = todayStr();
+  const dateEl = document.getElementById('micro-date');
+  const microDate = (dateEl && dateEl.value) ? dateEl.value : today;
+  const loggedFoods = state.microLogs.filter(l => l.date === microDate).map(l => l.food);
+
+  const foodChips = FOODS.map(f => `
+    <button class="food-chip${loggedFoods.includes(f.id) ? ' logged' : ''}" onclick="toggleFood('${f.id}')">${f.emoji} ${f.name}</button>
+  `).join('');
+
+  const viewTabs = ['daily','weekly','sauna'].map(v => `
+    <button class="micros-view-tab${state.microsTab === v ? ' active' : ''}" data-view="${v}" onclick="switchMicrosView('${v}')">
+      ${v.charAt(0).toUpperCase() + v.slice(1)}
+    </button>`).join('');
+
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3>Foods Eaten</h3>
+        <input type="date" id="micro-date" class="date-picker-sm" value="${microDate}" onchange="renderMicroContent()">
+      </div>
+      <div class="food-chips">${foodChips}</div>
+    </div>
+    <div class="micros-view-tabs">${viewTabs}</div>
+    ${renderNutrientGrid(loggedFoods)}`;
+}
+
+function renderNutrientGrid(loggedFoods) {
+  const view = state.microsTab;
+  const foodCovered = new Set();
+  loggedFoods.forEach(foodId => {
+    const food = FOODS.find(f => f.id === foodId);
+    if (food) food.nutrients.forEach(n => foodCovered.add(n));
+  });
+
+  let nutrients;
+  let weekCov = null;
+  if (view === 'weekly') {
+    weekCov = getWeeklyNutrientCoverage();
+    nutrients = MICRONUTRIENTS;
+  } else if (view === 'sauna') {
+    nutrients = MICRONUTRIENTS.filter(n => n.sauna);
+  } else {
+    nutrients = MICRONUTRIENTS.filter(n => n.cat === 'daily');
+  }
+
+  const cards = nutrients.map(n => {
+    let cardClass = '', statusText = '';
+    if (n.suppFull) {
+      cardClass = 'supp';
+      statusText = '💊 ' + n.supplement;
+    } else if (view === 'weekly' && weekCov) {
+      const days = weekCov.coverage[n.id] || 0;
+      const total = weekCov.totalDays;
+      const thresh = n.cat === 'daily' ? Math.ceil(total * 0.6) : 1;
+      if (days >= thresh) { cardClass = 'covered'; statusText = `✓ ${days}/${total} days`; }
+      else if (days > 0 || n.supplement) { cardClass = 'partial'; statusText = days > 0 ? `${days}/${total} days` : `0/${total} · supp`; }
+      else { statusText = `0/${total} days`; }
+    } else {
+      if (foodCovered.has(n.id)) { cardClass = 'covered'; statusText = '✓ Covered'; }
+      else if (n.supplement) { cardClass = 'partial'; statusText = '💊 Supplement'; }
+      else { statusText = '—'; }
+    }
+    const suppNote = n.supplement && !n.suppFull ? `<br><em>Supp: ${n.supplement}</em>` : '';
+    return `
+      <div class="nutrient-card ${cardClass}">
+        <div class="nutrient-card-top">
+          <span class="nutrient-name">${n.name}</span>
+          <button class="nutrient-info-btn" onclick="toggleNutrientDesc('${n.id}')">ⓘ</button>
+        </div>
+        <div class="nutrient-status">${statusText}</div>
+        <div class="nutrient-desc hidden" id="nd-${n.id}">${n.desc}${suppNote}</div>
+      </div>`;
+  }).join('');
+
+  const title = view === 'sauna' ? 'Sauna Recovery' : view === 'weekly' ? 'This Week' : 'Today';
+  return `<div class="card"><div class="card-header"><h3>${title}</h3></div><div class="nutrient-grid">${cards}</div></div>`;
+}
+
+function getWeeklyNutrientCoverage() {
+  const today = todayStr();
+  const dow = (new Date().getDay() + 6) % 7;
+  const weekStart = addDays(today, -dow);
+  const pastDates = Array.from({ length: dow + 1 }, (_, i) => addDays(weekStart, i));
+
+  const coverage = {};
+  MICRONUTRIENTS.forEach(n => { coverage[n.id] = 0; });
+  // Supplements count every day
+  pastDates.forEach(() => { coverage['vitD']++; coverage['omega3']++; });
+
+  pastDates.forEach(date => {
+    const dayFoods = state.microLogs.filter(l => l.date === date).map(l => l.food);
+    const dayCovered = new Set();
+    dayFoods.forEach(foodId => {
+      const food = FOODS.find(f => f.id === foodId);
+      if (food) food.nutrients.forEach(n => dayCovered.add(n));
+    });
+    dayCovered.forEach(n => { if (coverage[n] !== undefined) coverage[n]++; });
+  });
+  return { coverage, totalDays: pastDates.length };
+}
+
+function toggleNutrientDesc(id) {
+  const el = document.getElementById('nd-' + id);
+  if (el) el.classList.toggle('hidden');
+}
+
+async function toggleFood(foodId) {
+  const dateEl = document.getElementById('micro-date');
+  const date = (dateEl && dateEl.value) ? dateEl.value : todayStr();
+  const existing = state.microLogs.find(l => l.date === date && l.food === foodId);
+  if (existing) {
+    await db.from('micro_logs').delete().eq('id', existing.id);
+    state.microLogs = state.microLogs.filter(l => l.id !== existing.id);
+  } else {
+    const { data, error } = await db.from('micro_logs').insert({ date, food: foodId }).select().single();
+    if (error) { showToast('Failed to log food', 'error'); return; }
+    state.microLogs.push(data);
+  }
+  renderMicroContent();
+}
+
+async function retryMicrosLoad() {
+  const { data, error } = await db.from('micro_logs').select('*').order('date', { ascending: false });
+  if (error) { showToast('micro_logs table not found — run the SQL first', 'error'); return; }
+  state.microLogs = data || [];
+  renderMicroTab();
 }
 
 // ==========================================

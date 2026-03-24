@@ -189,6 +189,7 @@
         <div class="fitness-tabs">
           <button class="fitness-tab active" data-tab="cut" onclick="switchFitnessTab('cut')">Cut Tracker</button>
           <button class="fitness-tab" data-tab="sauna" onclick="switchFitnessTab('sauna')">Sauna</button>
+          <button class="fitness-tab" data-tab="micros" onclick="switchFitnessTab('micros')">Micros</button>
         </div>
 
         <div id="fitness-tab-cut" class="fitness-tab-pane">
@@ -405,6 +406,26 @@ ALTER TABLE sauna_logs ADD COLUMN IF NOT EXISTS protocol TEXT;</pre>
           </div><!-- /sauna-main-content -->
 
         </div><!-- /fitness-tab-sauna -->
+
+        <!-- MICROS TAB -->
+        <div id="fitness-tab-micros" class="fitness-tab-pane hidden">
+
+          <div id="micros-setup-notice" class="card hidden">
+            <div class="card-header"><h3>Setup Required</h3></div>
+            <p style="font-size:0.85rem;margin-bottom:12px">Run this in your Supabase SQL Editor to enable micro tracking:</p>
+            <pre class="sql-preview" style="font-size:0.75rem;margin-bottom:12px">CREATE TABLE IF NOT EXISTS micro_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL,
+  food TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE micro_logs DISABLE ROW LEVEL SECURITY;</pre>
+            <button class="btn-secondary btn-sm" onclick="retryMicrosLoad()">Retry</button>
+          </div>
+
+          <div id="micros-main-content"></div>
+
+        </div><!-- /fitness-tab-micros -->
 
       </section>
 

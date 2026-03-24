@@ -752,11 +752,76 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   border-color: var(--micros);
   color: var(--micros-light);
 }
+.food-chip.selected {
+  background: var(--ai);
+  border-color: var(--ai-light);
+  color: #fff;
+}
 .supp-chip.logged {
   background: var(--ai-dim);
   border-color: var(--ai);
   color: var(--ai-light);
 }
+.supp-serving { font-size: 0.7em; opacity: 0.75; margin-left: 2px; }
+.micro-quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+.micro-qty-food { font-size: 0.85rem; font-weight: 600; flex: 1; min-width: 100px; }
+.micro-qty-inputs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.qty-input {
+  width: 70px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.qty-unit-select {
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.micro-log-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.micro-log-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+}
+.micro-log-left { display: flex; gap: 5px; align-items: center; color: var(--text-dim); }
+.micro-log-del {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  line-height: 1;
+}
+.micro-log-del:hover { color: var(--danger); }
+.nutrient-amt { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.nutrient-bar-wrap {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  margin: 4px 0 2px;
+  overflow: hidden;
+}
+.nutrient-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; min-width: 0; }
 .nutrient-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

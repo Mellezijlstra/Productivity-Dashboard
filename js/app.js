@@ -133,9 +133,12 @@ CREATE TABLE IF NOT EXISTS micro_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   date DATE NOT NULL,
   food TEXT NOT NULL,
+  grams DECIMAL DEFAULT 100,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-ALTER TABLE micro_logs DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE micro_logs DISABLE ROW LEVEL SECURITY;
+-- If you already ran the old version, add the grams column:
+ALTER TABLE micro_logs ADD COLUMN IF NOT EXISTS grams DECIMAL DEFAULT 100;`;
 
 let db = null;
 let weightChart = null;
@@ -144,93 +147,133 @@ let weightChart = null;
 // MICRO NUTRIENT DATA
 // ==========================================
 
+// per100g values: vitC(mg), vitA(µg), vitB6(mg), vitB12(µg), iron(mg), zinc(mg),
+//   potassium(mg), calcium(mg), iodine(µg), magnesium(mg), vitD(µg), folate(µg),
+//   vitK(µg), selenium(µg), copper(mg), manganese(mg), choline(mg), vitE(mg), omega3(mg)
 const FOODS = [
-  // Your common foods
-  { id: 'avocado',       name: 'Avocado',        emoji: '🥑', nutrients: ['potassium','vitK','folate','vitB6','vitE','copper'] },
-  { id: 'chicken',       name: 'Chicken',         emoji: '🍗', nutrients: ['vitB6','vitB12','zinc','selenium','iron'] },
-  { id: 'kiwi',          name: 'Kiwi',            emoji: '🥝', nutrients: ['vitC','vitK','potassium','folate','copper'] },
-  { id: 'apple',         name: 'Apple',            emoji: '🍎', nutrients: ['vitC','potassium'] },
-  { id: 'carrot',        name: 'Carrot',           emoji: '🥕', nutrients: ['vitA','vitK','potassium','vitB6'] },
-  { id: 'rice',          name: 'Rice',             emoji: '🍚', nutrients: ['manganese','vitB6'] },
-  { id: 'sweetpotato',   name: 'Sweet Potato',     emoji: '🍠', nutrients: ['vitA','potassium','vitC','manganese','vitB6'] },
-  { id: 'pecorino',      name: 'Pecorino',         emoji: '🧀', nutrients: ['calcium','zinc','vitB12','vitA','iodine'] },
-  { id: 'parmesan',      name: 'Parmesan',         emoji: '🧀', nutrients: ['calcium','zinc','vitB12'] },
-  { id: 'eggs',          name: 'Eggs',             emoji: '🥚', nutrients: ['vitB12','vitD','selenium','choline','vitA','iodine','vitB6'] },
-  { id: 'driedapricot',  name: 'Dried Apricot',    emoji: '🍑', nutrients: ['iron','potassium','vitA','copper','vitE'] },
-  { id: 'hazelnuts',     name: 'Hazelnuts',        emoji: '🌰', nutrients: ['vitE','manganese','copper','vitB6','folate','magnesium'] },
-  { id: 'brazilnut',     name: 'Brazil Nut',       emoji: '🌰', nutrients: ['selenium','magnesium','zinc','copper'] },
-  { id: 'almonds',       name: 'Almonds',          emoji: '🌰', nutrients: ['vitE','magnesium','calcium','manganese','copper'] },
-  { id: 'grapefruit',    name: 'Grapefruit',       emoji: '🍊', nutrients: ['vitC','potassium','folate','vitA'] },
-  { id: 'kefir',         name: 'Kefir',            emoji: '🥛', nutrients: ['calcium','vitB12','iodine','potassium','vitK','zinc'] },
-  { id: 'oliveoil',      name: 'Olive Oil',        emoji: '🫒', nutrients: ['vitE','vitK'] },
-  // Suggested additions
-  { id: 'sardines',      name: 'Sardines',         emoji: '🐟', nutrients: ['omega3','vitD','vitB12','calcium','selenium','zinc','iron'] },
-  { id: 'salmon',        name: 'Salmon',           emoji: '🐠', nutrients: ['omega3','vitD','vitB12','vitB6','selenium','potassium'] },
-  { id: 'spinach',       name: 'Spinach',          emoji: '🥬', nutrients: ['iron','vitK','folate','magnesium','calcium','vitA','manganese'] },
-  { id: 'pumpkinseeds',  name: 'Pumpkin Seeds',    emoji: '🫘', nutrients: ['zinc','magnesium','iron','copper','manganese'] },
-  { id: 'darkchocolate', name: 'Dark Chocolate',   emoji: '🍫', nutrients: ['magnesium','iron','copper','manganese','zinc'] },
-  { id: 'lentils',       name: 'Lentils',          emoji: '🫘', nutrients: ['iron','folate','vitB6','potassium','zinc','copper','manganese'] },
-  { id: 'banana',        name: 'Banana',           emoji: '🍌', nutrients: ['potassium','vitB6','manganese','magnesium'] },
-  { id: 'beef',          name: 'Beef (lean)',       emoji: '🥩', nutrients: ['iron','zinc','vitB12','vitB6','selenium','choline'] },
-  { id: 'mackerel',      name: 'Mackerel',         emoji: '🐟', nutrients: ['omega3','vitD','vitB12','selenium','potassium','magnesium'] },
-  { id: 'tuna',          name: 'Tuna',             emoji: '🐠', nutrients: ['omega3','vitB12','selenium','potassium','vitB6'] },
-  { id: 'oysters',       name: 'Oysters',          emoji: '🦪', nutrients: ['zinc','vitB12','copper','selenium','iron','iodine'] },
-  { id: 'broccoli',      name: 'Broccoli',         emoji: '🥦', nutrients: ['vitC','vitK','folate','calcium','vitB6'] },
-  { id: 'blueberries',   name: 'Blueberries',      emoji: '🫐', nutrients: ['vitC','vitK','manganese','copper'] },
-  { id: 'walnuts',       name: 'Walnuts',          emoji: '🌰', nutrients: ['omega3','magnesium','copper','manganese','folate'] },
-  { id: 'sunflowerseeds',name: 'Sunflower Seeds',  emoji: '🌻', nutrients: ['vitE','vitB6','folate','magnesium','selenium','copper'] },
-  { id: 'greekyogurt',   name: 'Greek Yogurt',     emoji: '🥛', nutrients: ['calcium','vitB12','iodine','zinc','potassium'] },
-  { id: 'mushrooms',     name: 'Mushrooms',        emoji: '🍄', nutrients: ['vitD','copper','selenium','vitB6','choline'] },
-  { id: 'edamame',       name: 'Edamame',          emoji: '🫘', nutrients: ['folate','iron','calcium','vitK','zinc','potassium'] },
-  { id: 'beetroot',      name: 'Beetroot',         emoji: '🫀', nutrients: ['folate','potassium','manganese','iron','vitC'] },
+  { id: 'avocado',       name: 'Avocado',        emoji: '🥑',
+    per100g: { vitC:10,   vitA:7,   vitB6:0.26, vitB12:0,    iron:0.55, zinc:0.64,  potassium:485,  calcium:12,   iodine:1,   magnesium:29,  vitD:0,    folate:81,  vitK:21,    selenium:0.4,  copper:0.19, manganese:0.14, choline:14.2, vitE:2.07, omega3:110 }},
+  { id: 'chicken',       name: 'Chicken',         emoji: '🍗',
+    per100g: { vitC:0,    vitA:9,   vitB6:0.9,  vitB12:0.3,  iron:1.0,  zinc:1.8,   potassium:340,  calcium:15,   iodine:6,   magnesium:29,  vitD:0.1,  folate:4,   vitK:0,     selenium:27,   copper:0.07, manganese:0.02, choline:85,   vitE:0.3,  omega3:50  }},
+  { id: 'kiwi',          name: 'Kiwi',            emoji: '🥝',
+    per100g: { vitC:93,   vitA:4,   vitB6:0.06, vitB12:0,    iron:0.31, zinc:0.14,  potassium:312,  calcium:34,   iodine:0,   magnesium:17,  vitD:0,    folate:25,  vitK:40,    selenium:0.2,  copper:0.13, manganese:0.1,  choline:7.8,  vitE:1.5,  omega3:40  }},
+  { id: 'apple',         name: 'Apple',           emoji: '🍎',
+    per100g: { vitC:4.6,  vitA:3,   vitB6:0.04, vitB12:0,    iron:0.12, zinc:0.04,  potassium:107,  calcium:6,    iodine:0,   magnesium:5,   vitD:0,    folate:3,   vitK:2.2,   selenium:0,    copper:0.03, manganese:0.04, choline:3.4,  vitE:0.18, omega3:9   }},
+  { id: 'carrot',        name: 'Carrot',          emoji: '🥕',
+    per100g: { vitC:5.9,  vitA:835, vitB6:0.14, vitB12:0,    iron:0.3,  zinc:0.24,  potassium:320,  calcium:33,   iodine:2,   magnesium:12,  vitD:0,    folate:19,  vitK:13.2,  selenium:0.1,  copper:0.05, manganese:0.14, choline:8.8,  vitE:0.66, omega3:2   }},
+  { id: 'rice',          name: 'Rice',            emoji: '🍚',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.08, vitB12:0,    iron:0.2,  zinc:0.49,  potassium:35,   calcium:10,   iodine:0,   magnesium:12,  vitD:0,    folate:3,   vitK:0,     selenium:7.5,  copper:0.07, manganese:0.47, choline:2.1,  vitE:0,    omega3:18  }},
+  { id: 'sweetpotato',   name: 'Sweet Potato',    emoji: '🍠',
+    per100g: { vitC:12.8, vitA:961, vitB6:0.3,  vitB12:0,    iron:0.74, zinc:0.32,  potassium:475,  calcium:38,   iodine:2,   magnesium:27,  vitD:0,    folate:6,   vitK:2.5,   selenium:0.6,  copper:0.16, manganese:0.26, choline:12.3, vitE:0.71, omega3:10  }},
+  { id: 'pecorino',      name: 'Pecorino',        emoji: '🧀',
+    per100g: { vitC:0,    vitA:150, vitB6:0.08, vitB12:1.5,  iron:0.5,  zinc:2.5,   potassium:90,   calcium:760,  iodine:30,  magnesium:20,  vitD:0.5,  folate:7,   vitK:2,     selenium:14,   copper:0.02, manganese:0.02, choline:15,   vitE:0.3,  omega3:130 }},
+  { id: 'parmesan',      name: 'Parmesan',        emoji: '🧀',
+    per100g: { vitC:0,    vitA:140, vitB6:0.09, vitB12:1.2,  iron:0.82, zinc:2.75,  potassium:92,   calcium:1184, iodine:30,  magnesium:44,  vitD:0.5,  folate:7,   vitK:1.7,   selenium:22,   copper:0.03, manganese:0.03, choline:15,   vitE:0.27, omega3:90  }},
+  { id: 'eggs',          name: 'Eggs',            emoji: '🥚',
+    per100g: { vitC:0,    vitA:149, vitB6:0.17, vitB12:1.11, iron:1.83, zinc:1.29,  potassium:138,  calcium:56,   iodine:53,  magnesium:12,  vitD:2.0,  folate:47,  vitK:0.3,   selenium:31.7, copper:0.13, manganese:0.04, choline:294,  vitE:1.03, omega3:100 }},
+  { id: 'driedapricot',  name: 'Dried Apricot',   emoji: '🍑',
+    per100g: { vitC:1,    vitA:180, vitB6:0.14, vitB12:0,    iron:2.66, zinc:0.39,  potassium:1160, calcium:55,   iodine:0,   magnesium:32,  vitD:0,    folate:13,  vitK:3.1,   selenium:2.2,  copper:0.34, manganese:0.24, choline:13.9, vitE:4.33, omega3:20  }},
+  { id: 'hazelnuts',     name: 'Hazelnuts',       emoji: '🌰',
+    per100g: { vitC:6.3,  vitA:1,   vitB6:0.56, vitB12:0,    iron:4.7,  zinc:2.45,  potassium:680,  calcium:114,  iodine:0,   magnesium:163, vitD:0,    folate:113, vitK:14.2,  selenium:2.4,  copper:1.73, manganese:6.17, choline:45.6, vitE:15,   omega3:87  }},
+  { id: 'brazilnut',     name: 'Brazil Nut',      emoji: '🌰',
+    per100g: { vitC:0.7,  vitA:0,   vitB6:0.1,  vitB12:0,    iron:2.43, zinc:4.06,  potassium:659,  calcium:160,  iodine:2,   magnesium:376, vitD:0,    folate:22,  vitK:0,     selenium:1917, copper:1.74, manganese:1.22, choline:28.8, vitE:5.73, omega3:18  }},
+  { id: 'almonds',       name: 'Almonds',         emoji: '🌰',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.14, vitB12:0,    iron:3.71, zinc:3.12,  potassium:733,  calcium:264,  iodine:0,   magnesium:270, vitD:0,    folate:44,  vitK:0,     selenium:4.1,  copper:1.03, manganese:2.18, choline:52.1, vitE:25.6, omega3:0   }},
+  { id: 'grapefruit',    name: 'Grapefruit',      emoji: '🍊',
+    per100g: { vitC:38,   vitA:46,  vitB6:0.07, vitB12:0,    iron:0.08, zinc:0.07,  potassium:148,  calcium:22,   iodine:0,   magnesium:9,   vitD:0,    folate:10,  vitK:0,     selenium:0.1,  copper:0.06, manganese:0.02, choline:7.7,  vitE:0.13, omega3:7   }},
+  { id: 'kefir',         name: 'Kefir',           emoji: '🥛',
+    per100g: { vitC:0.5,  vitA:16,  vitB6:0.06, vitB12:0.5,  iron:0.05, zinc:0.38,  potassium:164,  calcium:120,  iodine:20,  magnesium:12,  vitD:0.1,  folate:5,   vitK:1,     selenium:2,    copper:0.01, manganese:0,    choline:16,   vitE:0.06, omega3:40  }},
+  { id: 'oliveoil',      name: 'Olive Oil',       emoji: '🫒',
+    per100g: { vitC:0,    vitA:0,   vitB6:0,    vitB12:0,    iron:0.56, zinc:0,     potassium:1,    calcium:1,    iodine:0,   magnesium:0,   vitD:0,    folate:0,   vitK:60,    selenium:0,    copper:0,    manganese:0,    choline:0.3,  vitE:14.35,omega3:760 }},
+  { id: 'sardines',      name: 'Sardines',        emoji: '🐟',
+    per100g: { vitC:0,    vitA:27,  vitB6:0.21, vitB12:8.9,  iron:2.92, zinc:1.31,  potassium:397,  calcium:382,  iodine:40,  magnesium:39,  vitD:4.8,  folate:10,  vitK:2.6,   selenium:52.7, copper:0.28, manganese:0.11, choline:75,   vitE:2,    omega3:2270}},
+  { id: 'salmon',        name: 'Salmon',          emoji: '🐠',
+    per100g: { vitC:0,    vitA:12,  vitB6:0.99, vitB12:3.18, iron:0.8,  zinc:0.64,  potassium:628,  calcium:14,   iodine:14,  magnesium:37,  vitD:13.1, folate:25,  vitK:0.5,   selenium:46.8, copper:0.29, manganese:0.02, choline:91,   vitE:3.55, omega3:2260}},
+  { id: 'spinach',       name: 'Spinach',         emoji: '🥬',
+    per100g: { vitC:28,   vitA:469, vitB6:0.2,  vitB12:0,    iron:2.71, zinc:0.53,  potassium:558,  calcium:99,   iodine:4,   magnesium:79,  vitD:0,    folate:194, vitK:483,   selenium:1,    copper:0.13, manganese:0.9,  choline:19.3, vitE:2.03, omega3:138 }},
+  { id: 'pumpkinseeds',  name: 'Pumpkin Seeds',   emoji: '🫘',
+    per100g: { vitC:1.9,  vitA:1,   vitB6:0.14, vitB12:0,    iron:8.07, zinc:7.64,  potassium:919,  calcium:46,   iodine:0,   magnesium:592, vitD:0,    folate:57,  vitK:7.3,   selenium:9.4,  copper:1.39, manganese:4.54, choline:63,   vitE:2.18, omega3:170 }},
+  { id: 'darkchocolate', name: 'Dark Chocolate',  emoji: '🍫',
+    per100g: { vitC:0,    vitA:2,   vitB6:0.06, vitB12:0,    iron:11.9, zinc:3.31,  potassium:715,  calcium:73,   iodine:0,   magnesium:228, vitD:0,    folate:13,  vitK:7.3,   selenium:6.8,  copper:1.77, manganese:1.95, choline:13.5, vitE:0.59, omega3:0   }},
+  { id: 'lentils',       name: 'Lentils',         emoji: '🫘',
+    per100g: { vitC:1.5,  vitA:1,   vitB6:0.18, vitB12:0,    iron:3.33, zinc:1.27,  potassium:369,  calcium:19,   iodine:0,   magnesium:36,  vitD:0,    folate:181, vitK:1.7,   selenium:2.8,  copper:0.25, manganese:0.49, choline:32.7, vitE:0.11, omega3:91  }},
+  { id: 'banana',        name: 'Banana',          emoji: '🍌',
+    per100g: { vitC:8.7,  vitA:3,   vitB6:0.37, vitB12:0,    iron:0.26, zinc:0.15,  potassium:358,  calcium:5,    iodine:0,   magnesium:27,  vitD:0,    folate:20,  vitK:0.5,   selenium:1,    copper:0.08, manganese:0.27, choline:9.8,  vitE:0.1,  omega3:27  }},
+  { id: 'beef',          name: 'Beef (lean)',      emoji: '🥩',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.44, vitB12:2.5,  iron:2.6,  zinc:6.3,   potassium:318,  calcium:22,   iodine:4,   magnesium:24,  vitD:0.1,  folate:6,   vitK:1.5,   selenium:28.5, copper:0.12, manganese:0.02, choline:111,  vitE:0.18, omega3:40  }},
+  { id: 'mackerel',      name: 'Mackerel',        emoji: '🐟',
+    per100g: { vitC:0.4,  vitA:50,  vitB6:0.5,  vitB12:16.1, iron:1.63, zinc:0.94,  potassium:520,  calcium:11,   iodine:45,  magnesium:97,  vitD:16.1, folate:2,   vitK:5,     selenium:51.6, copper:0.11, manganese:0.02, choline:65,   vitE:1.99, omega3:3620}},
+  { id: 'tuna',          name: 'Tuna',            emoji: '🐠',
+    per100g: { vitC:0,    vitA:18,  vitB6:0.5,  vitB12:2.5,  iron:1.3,  zinc:0.77,  potassium:384,  calcium:11,   iodine:18,  magnesium:31,  vitD:2.3,  folate:4,   vitK:0,     selenium:90.6, copper:0.08, manganese:0.02, choline:65,   vitE:1.0,  omega3:280 }},
+  { id: 'oysters',       name: 'Oysters',         emoji: '🦪',
+    per100g: { vitC:5,    vitA:114, vitB6:0.05, vitB12:16.3, iron:5.59, zinc:39.3,  potassium:168,  calcium:45,   iodine:160, magnesium:22,  vitD:3.4,  folate:18,  vitK:0,     selenium:77,   copper:4.46, manganese:0.36, choline:65,   vitE:1.1,  omega3:440 }},
+  { id: 'broccoli',      name: 'Broccoli',        emoji: '🥦',
+    per100g: { vitC:89.2, vitA:31,  vitB6:0.17, vitB12:0,    iron:0.73, zinc:0.41,  potassium:316,  calcium:47,   iodine:10,  magnesium:21,  vitD:0,    folate:63,  vitK:101.6, selenium:2.5,  copper:0.05, manganese:0.21, choline:18.7, vitE:0.78, omega3:170 }},
+  { id: 'blueberries',   name: 'Blueberries',     emoji: '🫐',
+    per100g: { vitC:9.7,  vitA:3,   vitB6:0.05, vitB12:0,    iron:0.28, zinc:0.16,  potassium:77,   calcium:6,    iodine:0,   magnesium:6,   vitD:0,    folate:6,   vitK:19,    selenium:0.1,  copper:0.06, manganese:0.34, choline:6,    vitE:0.57, omega3:58  }},
+  { id: 'walnuts',       name: 'Walnuts',         emoji: '🌰',
+    per100g: { vitC:1.3,  vitA:1,   vitB6:0.54, vitB12:0,    iron:2.91, zinc:3.09,  potassium:441,  calcium:98,   iodine:0,   magnesium:158, vitD:0,    folate:98,  vitK:2.7,   selenium:4.9,  copper:1.59, manganese:3.41, choline:39.2, vitE:0.7,  omega3:9080}},
+  { id: 'sunflowerseeds',name: 'Sunflower Seeds', emoji: '🌻',
+    per100g: { vitC:1.4,  vitA:3,   vitB6:1.35, vitB12:0,    iron:5.25, zinc:5.0,   potassium:645,  calcium:78,   iodine:0,   magnesium:325, vitD:0,    folate:227, vitK:0,     selenium:79.3, copper:1.83, manganese:1.95, choline:55.1, vitE:35.17,omega3:91  }},
+  { id: 'greekyogurt',   name: 'Greek Yogurt',    emoji: '🥛',
+    per100g: { vitC:0,    vitA:27,  vitB6:0.07, vitB12:0.75, iron:0.08, zinc:0.52,  potassium:141,  calcium:110,  iodine:35,  magnesium:11,  vitD:0,    folate:7,   vitK:0,     selenium:9.7,  copper:0.01, manganese:0.01, choline:15.1, vitE:0.05, omega3:93  }},
+  { id: 'mushrooms',     name: 'Mushrooms',       emoji: '🍄',
+    per100g: { vitC:2.1,  vitA:0,   vitB6:0.11, vitB12:0,    iron:0.5,  zinc:0.52,  potassium:318,  calcium:3,    iodine:3,   magnesium:9,   vitD:0.2,  folate:17,  vitK:0,     selenium:9.3,  copper:0.32, manganese:0.05, choline:16.6, vitE:0.01, omega3:0   }},
+  { id: 'edamame',       name: 'Edamame',         emoji: '🫘',
+    per100g: { vitC:6.1,  vitA:4,   vitB6:0.1,  vitB12:0,    iron:2.27, zinc:1.37,  potassium:436,  calcium:63,   iodine:2,   magnesium:64,  vitD:0,    folate:311, vitK:26.7,  selenium:1.5,  copper:0.41, manganese:1.02, choline:56.7, vitE:0.68, omega3:0   }},
+  { id: 'beetroot',      name: 'Beetroot',        emoji: '🫀',
+    per100g: { vitC:3.6,  vitA:1,   vitB6:0.06, vitB12:0,    iron:0.79, zinc:0.35,  potassium:305,  calcium:16,   iodine:0,   magnesium:23,  vitD:0,    folate:80,  vitK:0.2,   selenium:0.7,  copper:0.08, manganese:0.33, choline:6.5,  vitE:0.04, omega3:0   }},
 ];
 
 const SUPPLEMENTS = [
-  { id: 'supp_vitD',   name: 'Vitamin D 50µg',        emoji: '💊', nutrients: ['vitD'] },
-  { id: 'supp_moller', name: 'Möller Omega-3',         emoji: '🐟', nutrients: ['omega3','vitA','vitE','vitD'] },
-  { id: 'supp_mag',    name: 'Magnesium Bisglycinate', emoji: '💊', nutrients: ['magnesium'] },
+  { id: 'supp_vitD',   name: 'Vitamin D 50µg',        emoji: '💊', serving: '1 capsule',
+    amounts: { vitD: 50 } },
+  { id: 'supp_moller', name: 'Möller Omega-3',         emoji: '🐟', serving: '1 tbsp (10ml)',
+    amounts: { omega3: 1110, vitD: 10, vitA: 250, vitE: 3 } },
+  { id: 'supp_mag',    name: 'Magnesium Bisglycinate', emoji: '💊', serving: '1 capsule',
+    amounts: { magnesium: 150 } },
 ];
 
 const MICRONUTRIENTS = [
   // Daily
-  { id: 'vitC',      name: 'Vitamin C',   cat: 'daily',  sauna: true,  supplement: null,
+  { id: 'vitC',      name: 'Vitamin C',   cat: 'daily',  sauna: true,  rda: 90,   unit: 'mg',
     desc: 'Antioxidant and immune defence. Counters oxidative stress from heat — especially relevant post-sauna.' },
-  { id: 'vitA',      name: 'Vitamin A',   cat: 'daily',  sauna: false, supplement: '250µg via Möller (partial)',
+  { id: 'vitA',      name: 'Vitamin A',   cat: 'daily',  sauna: false, rda: 900,  unit: 'µg',
     desc: 'Vision, skin health, immune function and mucous membrane integrity.' },
-  { id: 'vitB6',     name: 'Vitamin B6',  cat: 'daily',  sauna: false, supplement: null,
+  { id: 'vitB6',     name: 'Vitamin B6',  cat: 'daily',  sauna: false, rda: 1.3,  unit: 'mg',
     desc: 'Protein metabolism, neurotransmitter production. Supports mood and energy regulation.' },
-  { id: 'vitB12',    name: 'Vitamin B12', cat: 'daily',  sauna: false, supplement: null,
+  { id: 'vitB12',    name: 'Vitamin B12', cat: 'daily',  sauna: false, rda: 2.4,  unit: 'µg',
     desc: 'Nerve function, red blood cell formation, and energy metabolism.' },
-  { id: 'iron',      name: 'Iron',        cat: 'daily',  sauna: false, supplement: null,
+  { id: 'iron',      name: 'Iron',        cat: 'daily',  sauna: false, rda: 8,    unit: 'mg',
     desc: 'Oxygen transport in blood. Low iron leads to fatigue and poor endurance.' },
-  { id: 'zinc',      name: 'Zinc',        cat: 'daily',  sauna: true,  supplement: null,
+  { id: 'zinc',      name: 'Zinc',        cat: 'daily',  sauna: true,  rda: 11,   unit: 'mg',
     desc: 'Immune function, testosterone support, wound healing. Lost through sweat — sauna relevant.' },
-  { id: 'potassium', name: 'Potassium',   cat: 'daily',  sauna: true,  supplement: null,
+  { id: 'potassium', name: 'Potassium',   cat: 'daily',  sauna: true,  rda: 3500, unit: 'mg',
     desc: 'Key electrolyte for muscle contraction and heart rhythm. Depleted heavily in sauna sessions.' },
-  { id: 'calcium',   name: 'Calcium',     cat: 'daily',  sauna: false, supplement: null,
+  { id: 'calcium',   name: 'Calcium',     cat: 'daily',  sauna: false, rda: 1000, unit: 'mg',
     desc: 'Bone density, muscle contraction, nerve signalling.' },
-  { id: 'iodine',    name: 'Iodine',      cat: 'daily',  sauna: false, supplement: null,
+  { id: 'iodine',    name: 'Iodine',      cat: 'daily',  sauna: false, rda: 150,  unit: 'µg',
     desc: 'Thyroid hormone production and metabolic rate regulation.' },
-  { id: 'magnesium', name: 'Magnesium',   cat: 'daily',  sauna: true,  supplement: 'Bisglycinate 150mg (planned)',
+  { id: 'magnesium', name: 'Magnesium',   cat: 'daily',  sauna: true,  rda: 420,  unit: 'mg',
     desc: 'Muscle relaxation, sleep quality, 300+ enzyme reactions. Lost heavily through sweat in sauna.' },
-  { id: 'vitD',      name: 'Vitamin D',   cat: 'daily',  sauna: false, supplement: '60µg total — covered', suppFull: true,
+  { id: 'vitD',      name: 'Vitamin D',   cat: 'daily',  sauna: false, rda: 15,   unit: 'µg',
     desc: 'Bone health, immune modulation, mood regulation, and muscle recovery support.' },
   // Weekly
-  { id: 'folate',    name: 'Folate (B9)', cat: 'weekly', sauna: false, supplement: null,
+  { id: 'folate',    name: 'Folate (B9)', cat: 'weekly', sauna: false, rda: 400,  unit: 'µg',
     desc: 'DNA synthesis and repair, cell growth. Critical for long-term cellular health.' },
-  { id: 'vitK',      name: 'Vitamin K',   cat: 'weekly', sauna: false, supplement: null,
+  { id: 'vitK',      name: 'Vitamin K',   cat: 'weekly', sauna: false, rda: 120,  unit: 'µg',
     desc: 'Blood clotting and bone mineralisation. K2 in kefir directs calcium to bones, not arteries.' },
-  { id: 'selenium',  name: 'Selenium',    cat: 'weekly', sauna: true,  supplement: null,
+  { id: 'selenium',  name: 'Selenium',    cat: 'weekly', sauna: true,  rda: 55,   unit: 'µg',
     desc: 'Powerful antioxidant, thyroid function, DNA repair. Brazil nuts are the richest food source.' },
-  { id: 'copper',    name: 'Copper',      cat: 'weekly', sauna: false, supplement: null,
+  { id: 'copper',    name: 'Copper',      cat: 'weekly', sauna: false, rda: 0.9,  unit: 'mg',
     desc: 'Iron absorption, collagen formation, antioxidant enzyme production.' },
-  { id: 'manganese', name: 'Manganese',   cat: 'weekly', sauna: false, supplement: null,
+  { id: 'manganese', name: 'Manganese',   cat: 'weekly', sauna: false, rda: 2.3,  unit: 'mg',
     desc: 'Bone formation, antioxidant defence, carbohydrate and amino acid metabolism.' },
-  { id: 'choline',   name: 'Choline',     cat: 'weekly', sauna: false, supplement: null,
+  { id: 'choline',   name: 'Choline',     cat: 'weekly', sauna: false, rda: 550,  unit: 'mg',
     desc: 'Liver function, brain health, cell membrane integrity. Eggs are your primary source.' },
-  { id: 'vitE',      name: 'Vitamin E',   cat: 'weekly', sauna: true,  supplement: '3mg via Möller (partial, RDA 15mg)',
+  { id: 'vitE',      name: 'Vitamin E',   cat: 'weekly', sauna: true,  rda: 15,   unit: 'mg',
     desc: 'Fat-soluble antioxidant protecting cell membranes. Reduces oxidative stress post-sauna.' },
-  { id: 'omega3',    name: 'Omega-3',     cat: 'weekly', sauna: true,  supplement: '1110mg via Möller — covered', suppFull: true,
+  { id: 'omega3',    name: 'Omega-3',     cat: 'weekly', sauna: true,  rda: 1600, unit: 'mg',
     desc: 'Anti-inflammatory, cardiovascular health, brain function. Reduces inflammation after sauna.' },
 ];
 
@@ -249,6 +292,7 @@ const state = {
   notesTab: 'daily',
   microLogs: [],
   microsTab: 'daily',
+  selectedMicroFood: null,
   settings: {},
   selectedDeficit: 500,
   currentWeekOffset: 0,
@@ -1460,22 +1504,88 @@ function renderMicroTab() {
   renderMicroContent();
 }
 
+function getTotalNutrientAmounts(dayLogs) {
+  const totals = {};
+  MICRONUTRIENTS.forEach(n => { totals[n.id] = 0; });
+  dayLogs.forEach(l => {
+    const grams = parseFloat(l.grams || 100);
+    if (l.food.startsWith('supp_')) {
+      const supp = SUPPLEMENTS.find(s => s.id === l.food);
+      if (supp && supp.amounts) {
+        Object.entries(supp.amounts).forEach(([nid, amt]) => {
+          if (totals[nid] !== undefined) totals[nid] += amt * grams;
+        });
+      }
+    } else {
+      const food = FOODS.find(f => f.id === l.food);
+      if (food && food.per100g) {
+        Object.entries(food.per100g).forEach(([nid, per100]) => {
+          if (totals[nid] !== undefined) totals[nid] += per100 * (grams / 100);
+        });
+      }
+    }
+  });
+  return totals;
+}
+
+function formatNutrientAmt(amount, unit) {
+  if (amount === 0) return `0 ${unit}`;
+  if (amount < 0.05) return `<0.1 ${unit}`;
+  if (amount < 10) return `${parseFloat(amount.toFixed(1))} ${unit}`;
+  return `${Math.round(amount)} ${unit}`;
+}
+
 function renderMicroContent() {
   const main = document.getElementById('micros-main-content');
   const today = todayStr();
   const dateEl = document.getElementById('micro-date');
   const microDate = (dateEl && dateEl.value) ? dateEl.value : today;
-  const allLogged = state.microLogs.filter(l => l.date === microDate).map(l => l.food);
-  const loggedFoods = allLogged.filter(id => !id.startsWith('supp_'));
-  const loggedSupps = allLogged.filter(id => id.startsWith('supp_'));
 
-  const foodChips = FOODS.map(f => `
-    <button class="food-chip${loggedFoods.includes(f.id) ? ' logged' : ''}" onclick="toggleFood('${f.id}')">${f.emoji} ${f.name}</button>
-  `).join('');
+  const dayLogs = state.microLogs.filter(l => l.date === microDate);
+  const loggedSuppIds = dayLogs.filter(l => l.food.startsWith('supp_')).map(l => l.food);
+  const foodEntries = dayLogs.filter(l => !l.food.startsWith('supp_'));
+  const sel = state.selectedMicroFood;
 
-  const suppChips = SUPPLEMENTS.map(s => `
-    <button class="food-chip supp-chip${loggedSupps.includes(s.id) ? ' logged' : ''}" onclick="toggleFood('${s.id}')">${s.emoji} ${s.name}</button>
-  `).join('');
+  const foodChips = FOODS.map(f => {
+    const count = foodEntries.filter(l => l.food === f.id).length;
+    const isSelected = f.id === sel;
+    let cls = 'food-chip';
+    if (isSelected) cls += ' selected';
+    else if (count > 0) cls += ' logged';
+    return `<button class="${cls}" onclick="selectMicroFood('${f.id}')">${f.emoji} ${f.name}${count > 1 ? ` ×${count}` : ''}</button>`;
+  }).join('');
+
+  const selFood = sel && !sel.startsWith('supp_') ? FOODS.find(f => f.id === sel) : null;
+  const qtyRowHtml = selFood ? `
+    <div class="micro-quantity-row">
+      <span class="micro-qty-food">${selFood.emoji} ${selFood.name}</span>
+      <div class="micro-qty-inputs">
+        <input type="number" id="micro-qty-amount" class="qty-input" value="100" min="1" max="9999" step="1">
+        <select id="micro-qty-unit" class="qty-unit-select">
+          <option value="1" selected>g</option>
+          <option value="100">× 100g</option>
+        </select>
+        <button class="btn-sm btn-primary" onclick="addMicroFood()">Add</button>
+        <button class="btn-sm" onclick="selectMicroFood(null)" style="padding:4px 8px">✕</button>
+      </div>
+    </div>` : '';
+
+  const foodLogHtml = foodEntries.length ? `
+    <div class="micro-log-list">
+      ${foodEntries.map(l => {
+        const f = FOODS.find(f => f.id === l.food);
+        if (!f) return '';
+        return `<div class="micro-log-entry">
+          <span class="micro-log-left">${f.emoji} <strong>${f.name}</strong> — ${parseFloat(l.grams || 100)}g</span>
+          <button class="micro-log-del" onclick="removeMicroLog('${l.id}')">✕</button>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const suppChips = SUPPLEMENTS.map(s => {
+    const isLogged = loggedSuppIds.includes(s.id);
+    return `<button class="food-chip supp-chip${isLogged ? ' logged' : ''}" onclick="toggleFood('${s.id}')">${s.emoji} ${s.name} <span class="supp-serving">${s.serving}</span></button>`;
+  }).join('');
 
   const viewTabs = ['daily','weekly','sauna'].map(v => `
     <button class="micros-view-tab${state.microsTab === v ? ' active' : ''}" data-view="${v}" onclick="switchMicrosView('${v}')">
@@ -1489,33 +1599,22 @@ function renderMicroContent() {
         <input type="date" id="micro-date" class="date-picker-sm" value="${microDate}" onchange="renderMicroContent()">
       </div>
       <div class="food-chips">${foodChips}</div>
+      ${qtyRowHtml}
+      ${foodLogHtml}
     </div>
     <div class="card">
       <div class="card-header"><h3>Supplements Taken</h3></div>
       <div class="food-chips">${suppChips}</div>
     </div>
     <div class="micros-view-tabs">${viewTabs}</div>
-    ${renderNutrientGrid(loggedFoods, loggedSupps)}`;
+    ${renderNutrientGrid(dayLogs)}`;
 }
 
-function renderNutrientGrid(loggedFoods, loggedSupps = []) {
+function renderNutrientGrid(dayLogs) {
   const view = state.microsTab;
-
-  const foodCovered = new Set();
-  loggedFoods.forEach(foodId => {
-    const food = FOODS.find(f => f.id === foodId);
-    if (food) food.nutrients.forEach(n => foodCovered.add(n));
-  });
-
-  const suppCovered = new Set();
-  loggedSupps.forEach(suppId => {
-    const supp = SUPPLEMENTS.find(s => s.id === suppId);
-    if (supp) supp.nutrients.forEach(n => suppCovered.add(n));
-  });
-
-  let nutrients, weekCov = null;
+  let nutrients, weekData = null;
   if (view === 'weekly') {
-    weekCov = getWeeklyNutrientCoverage();
+    weekData = getWeeklyNutrientCoverage();
     nutrients = MICRONUTRIENTS;
   } else if (view === 'sauna') {
     nutrients = MICRONUTRIENTS.filter(n => n.sauna);
@@ -1523,22 +1622,30 @@ function renderNutrientGrid(loggedFoods, loggedSupps = []) {
     nutrients = MICRONUTRIENTS.filter(n => n.cat === 'daily');
   }
 
+  const todayAmounts = getTotalNutrientAmounts(dayLogs);
+
   const cards = nutrients.map(n => {
-    let cardClass = '', statusText = '';
-    if (view === 'weekly' && weekCov) {
-      const days = weekCov.coverage[n.id] || 0;
-      const total = weekCov.totalDays;
-      const thresh = n.cat === 'daily' ? Math.ceil(total * 0.6) : 1;
-      if (days >= thresh) { cardClass = 'covered'; statusText = `✓ ${days}/${total} days`; }
-      else if (days > 0) { cardClass = 'partial'; statusText = `${days}/${total} days`; }
-      else { statusText = `0/${total} days`; }
+    let cardClass = '', barColor = '', statusHtml = '';
+    if (view === 'weekly' && weekData) {
+      const avgAmt = weekData.avgAmounts[n.id] || 0;
+      const pct = n.rda > 0 ? Math.min(100, Math.round((avgAmt / n.rda) * 100)) : 0;
+      if (pct >= 80) { cardClass = 'covered'; barColor = 'var(--micros)'; }
+      else if (pct >= 40) { cardClass = 'partial'; barColor = 'var(--warning)'; }
+      else { barColor = 'var(--danger)'; }
+      const covDays = weekData.coveredDays[n.id] || 0;
+      statusHtml = `
+        <div class="nutrient-amt">${formatNutrientAmt(avgAmt, n.unit)} avg / ${n.rda} ${n.unit} RDA</div>
+        <div class="nutrient-bar-wrap"><div class="nutrient-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        <div class="nutrient-status">${pct}% · ${covDays}/${weekData.totalDays}d ≥50% RDA</div>`;
     } else {
-      const byFood = foodCovered.has(n.id);
-      const bySupp = suppCovered.has(n.id);
-      if (byFood && bySupp) { cardClass = 'covered'; statusText = '✓ Food + Supp'; }
-      else if (byFood)      { cardClass = 'covered'; statusText = '✓ Food'; }
-      else if (bySupp)      { cardClass = 'supp';    statusText = '💊 Supplement'; }
-      else                  { statusText = '—'; }
+      const amt = todayAmounts[n.id] || 0;
+      const pct = n.rda > 0 ? Math.min(100, Math.round((amt / n.rda) * 100)) : 0;
+      if (pct >= 80) { cardClass = 'covered'; barColor = 'var(--micros)'; }
+      else if (pct >= 40) { cardClass = 'partial'; barColor = 'var(--warning)'; }
+      else { barColor = 'var(--danger)'; }
+      statusHtml = `
+        <div class="nutrient-amt">${formatNutrientAmt(amt, n.unit)} / ${n.rda} ${n.unit} RDA</div>
+        <div class="nutrient-bar-wrap"><div class="nutrient-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
     }
     return `
       <div class="nutrient-card ${cardClass}">
@@ -1546,7 +1653,7 @@ function renderNutrientGrid(loggedFoods, loggedSupps = []) {
           <span class="nutrient-name">${n.name}</span>
           <button class="nutrient-info-btn" onclick="toggleNutrientDesc('${n.id}')">ⓘ</button>
         </div>
-        <div class="nutrient-status">${statusText}</div>
+        ${statusHtml}
         <div class="nutrient-desc hidden" id="nd-${n.id}">${n.desc}</div>
       </div>`;
   }).join('');
@@ -1573,17 +1680,11 @@ function renderWeekDayLog() {
     if (date > today) {
       return `<div class="day-log-row future"><div class="day-log-header"><span class="day-log-name">${name}</span><span class="day-log-pct" style="color:var(--text-muted)">—</span></div></div>`;
     }
-    const dayLogs = state.microLogs.filter(l => l.date === date).map(l => l.food);
-    const dayCovered = new Set();
-    dayLogs.forEach(id => {
-      const food = FOODS.find(f => f.id === id);
-      if (food) food.nutrients.forEach(n => dayCovered.add(n));
-      const supp = SUPPLEMENTS.find(s => s.id === id);
-      if (supp) supp.nutrients.forEach(n => dayCovered.add(n));
-    });
-    const covered = dailyNutrients.filter(n => dayCovered.has(n.id));
-    const missing  = dailyNutrients.filter(n => !dayCovered.has(n.id));
-    const pct = dayLogs.length ? Math.round((covered.length / total) * 100) : null;
+    const logs = state.microLogs.filter(l => l.date === date);
+    const amts = getTotalNutrientAmounts(logs);
+    const covered = dailyNutrients.filter(n => n.rda > 0 && (amts[n.id] || 0) >= n.rda * 0.5);
+    const missing  = dailyNutrients.filter(n => !(n.rda > 0 && (amts[n.id] || 0) >= n.rda * 0.5));
+    const pct = logs.length ? Math.round((covered.length / total) * 100) : null;
     const pctColor = pct === null ? 'var(--text-muted)' : pct >= 80 ? 'var(--micros)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
     return `
       <div class="day-log-row">
@@ -1591,7 +1692,7 @@ function renderWeekDayLog() {
           <span class="day-log-name">${name}</span>
           <span class="day-log-pct" style="color:${pctColor}">${pct !== null ? pct+'%' : '—'}</span>
         </div>
-        ${dayLogs.length ? `<div class="day-log-tags">
+        ${logs.length ? `<div class="day-log-tags">
           ${covered.map(n => `<span class="day-log-tag covered">${shortNutrientName(n)}</span>`).join('')}
           ${missing.map(n  => `<span class="day-log-tag missing">${shortNutrientName(n)}</span>`).join('')}
         </div>` : '<div style="font-size:0.72rem;color:var(--text-muted)">Nothing logged</div>'}
@@ -1607,26 +1708,61 @@ function getWeeklyNutrientCoverage() {
   const weekStart = addDays(today, -dow);
   const pastDates = Array.from({ length: dow + 1 }, (_, i) => addDays(weekStart, i));
 
-  const coverage = {};
-  MICRONUTRIENTS.forEach(n => { coverage[n.id] = 0; });
+  const sumAmounts = {};
+  const coveredDays = {};
+  MICRONUTRIENTS.forEach(n => { sumAmounts[n.id] = 0; coveredDays[n.id] = 0; });
 
   pastDates.forEach(date => {
-    const dayLogs = state.microLogs.filter(l => l.date === date).map(l => l.food);
-    const dayCovered = new Set();
-    dayLogs.forEach(id => {
-      const food = FOODS.find(f => f.id === id);
-      if (food) food.nutrients.forEach(n => dayCovered.add(n));
-      const supp = SUPPLEMENTS.find(s => s.id === id);
-      if (supp) supp.nutrients.forEach(n => dayCovered.add(n));
+    const logs = state.microLogs.filter(l => l.date === date);
+    const amts = getTotalNutrientAmounts(logs);
+    MICRONUTRIENTS.forEach(n => {
+      sumAmounts[n.id] += amts[n.id] || 0;
+      if (n.rda > 0 && (amts[n.id] || 0) >= n.rda * 0.5) coveredDays[n.id]++;
     });
-    dayCovered.forEach(n => { if (coverage[n] !== undefined) coverage[n]++; });
   });
-  return { coverage, totalDays: pastDates.length };
+
+  const avgAmounts = {};
+  MICRONUTRIENTS.forEach(n => {
+    avgAmounts[n.id] = pastDates.length > 0 ? sumAmounts[n.id] / pastDates.length : 0;
+  });
+
+  return { avgAmounts, coveredDays, totalDays: pastDates.length };
 }
 
 function toggleNutrientDesc(id) {
   const el = document.getElementById('nd-' + id);
   if (el) el.classList.toggle('hidden');
+}
+
+function selectMicroFood(foodId) {
+  state.selectedMicroFood = foodId;
+  renderMicroContent();
+}
+
+async function addMicroFood() {
+  const foodId = state.selectedMicroFood;
+  if (!foodId) return;
+  const dateEl = document.getElementById('micro-date');
+  const date = (dateEl && dateEl.value) ? dateEl.value : todayStr();
+  const amountEl = document.getElementById('micro-qty-amount');
+  const unitEl = document.getElementById('micro-qty-unit');
+  const amount = parseFloat(amountEl?.value || 100);
+  const multiplier = parseFloat(unitEl?.value || 1);
+  const grams = amount * multiplier;
+  if (!grams || grams <= 0) { showToast('Enter a valid amount', 'error'); return; }
+
+  const { data, error } = await db.from('micro_logs').insert({ date, food: foodId, grams }).select().single();
+  if (error) { showToast('Failed to log food', 'error'); return; }
+  state.microLogs.push(data);
+  state.selectedMicroFood = null;
+  renderMicroContent();
+}
+
+async function removeMicroLog(logId) {
+  const { error } = await db.from('micro_logs').delete().eq('id', logId);
+  if (error) { showToast('Failed to remove entry', 'error'); return; }
+  state.microLogs = state.microLogs.filter(l => l.id !== logId);
+  renderMicroContent();
 }
 
 async function toggleFood(foodId) {
@@ -1637,8 +1773,8 @@ async function toggleFood(foodId) {
     await db.from('micro_logs').delete().eq('id', existing.id);
     state.microLogs = state.microLogs.filter(l => l.id !== existing.id);
   } else {
-    const { data, error } = await db.from('micro_logs').insert({ date, food: foodId }).select().single();
-    if (error) { showToast('Failed to log food', 'error'); return; }
+    const { data, error } = await db.from('micro_logs').insert({ date, food: foodId, grams: 1 }).select().single();
+    if (error) { showToast('Failed to log supplement', 'error'); return; }
     state.microLogs.push(data);
   }
   renderMicroContent();

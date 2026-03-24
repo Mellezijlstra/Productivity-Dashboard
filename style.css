@@ -752,6 +752,11 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   border-color: var(--micros);
   color: var(--micros-light);
 }
+.supp-chip.logged {
+  background: var(--ai-dim);
+  border-color: var(--ai);
+  color: var(--ai-light);
+}
 .nutrient-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

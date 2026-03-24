@@ -171,6 +171,24 @@ const FOODS = [
   { id: 'darkchocolate', name: 'Dark Chocolate',   emoji: '🍫', nutrients: ['magnesium','iron','copper','manganese','zinc'] },
   { id: 'lentils',       name: 'Lentils',          emoji: '🫘', nutrients: ['iron','folate','vitB6','potassium','zinc','copper','manganese'] },
   { id: 'banana',        name: 'Banana',           emoji: '🍌', nutrients: ['potassium','vitB6','manganese','magnesium'] },
+  { id: 'beef',          name: 'Beef (lean)',       emoji: '🥩', nutrients: ['iron','zinc','vitB12','vitB6','selenium','choline'] },
+  { id: 'mackerel',      name: 'Mackerel',         emoji: '🐟', nutrients: ['omega3','vitD','vitB12','selenium','potassium','magnesium'] },
+  { id: 'tuna',          name: 'Tuna',             emoji: '🐠', nutrients: ['omega3','vitB12','selenium','potassium','vitB6'] },
+  { id: 'oysters',       name: 'Oysters',          emoji: '🦪', nutrients: ['zinc','vitB12','copper','selenium','iron','iodine'] },
+  { id: 'broccoli',      name: 'Broccoli',         emoji: '🥦', nutrients: ['vitC','vitK','folate','calcium','vitB6'] },
+  { id: 'blueberries',   name: 'Blueberries',      emoji: '🫐', nutrients: ['vitC','vitK','manganese','copper'] },
+  { id: 'walnuts',       name: 'Walnuts',          emoji: '🌰', nutrients: ['omega3','magnesium','copper','manganese','folate'] },
+  { id: 'sunflowerseeds',name: 'Sunflower Seeds',  emoji: '🌻', nutrients: ['vitE','vitB6','folate','magnesium','selenium','copper'] },
+  { id: 'greekyogurt',   name: 'Greek Yogurt',     emoji: '🥛', nutrients: ['calcium','vitB12','iodine','zinc','potassium'] },
+  { id: 'mushrooms',     name: 'Mushrooms',        emoji: '🍄', nutrients: ['vitD','copper','selenium','vitB6','choline'] },
+  { id: 'edamame',       name: 'Edamame',          emoji: '🫘', nutrients: ['folate','iron','calcium','vitK','zinc','potassium'] },
+  { id: 'beetroot',      name: 'Beetroot',         emoji: '🫀', nutrients: ['folate','potassium','manganese','iron','vitC'] },
+];
+
+const SUPPLEMENTS = [
+  { id: 'supp_vitD',   name: 'Vitamin D 50µg',        emoji: '💊', nutrients: ['vitD'] },
+  { id: 'supp_moller', name: 'Möller Omega-3',         emoji: '🐟', nutrients: ['omega3','vitA','vitE','vitD'] },
+  { id: 'supp_mag',    name: 'Magnesium Bisglycinate', emoji: '💊', nutrients: ['magnesium'] },
 ];
 
 const MICRONUTRIENTS = [
@@ -1447,10 +1465,16 @@ function renderMicroContent() {
   const today = todayStr();
   const dateEl = document.getElementById('micro-date');
   const microDate = (dateEl && dateEl.value) ? dateEl.value : today;
-  const loggedFoods = state.microLogs.filter(l => l.date === microDate).map(l => l.food);
+  const allLogged = state.microLogs.filter(l => l.date === microDate).map(l => l.food);
+  const loggedFoods = allLogged.filter(id => !id.startsWith('supp_'));
+  const loggedSupps = allLogged.filter(id => id.startsWith('supp_'));
 
   const foodChips = FOODS.map(f => `
     <button class="food-chip${loggedFoods.includes(f.id) ? ' logged' : ''}" onclick="toggleFood('${f.id}')">${f.emoji} ${f.name}</button>
+  `).join('');
+
+  const suppChips = SUPPLEMENTS.map(s => `
+    <button class="food-chip supp-chip${loggedSupps.includes(s.id) ? ' logged' : ''}" onclick="toggleFood('${s.id}')">${s.emoji} ${s.name}</button>
   `).join('');
 
   const viewTabs = ['daily','weekly','sauna'].map(v => `
@@ -1466,20 +1490,30 @@ function renderMicroContent() {
       </div>
       <div class="food-chips">${foodChips}</div>
     </div>
+    <div class="card">
+      <div class="card-header"><h3>Supplements Taken</h3></div>
+      <div class="food-chips">${suppChips}</div>
+    </div>
     <div class="micros-view-tabs">${viewTabs}</div>
-    ${renderNutrientGrid(loggedFoods)}`;
+    ${renderNutrientGrid(loggedFoods, loggedSupps)}`;
 }
 
-function renderNutrientGrid(loggedFoods) {
+function renderNutrientGrid(loggedFoods, loggedSupps = []) {
   const view = state.microsTab;
+
   const foodCovered = new Set();
   loggedFoods.forEach(foodId => {
     const food = FOODS.find(f => f.id === foodId);
     if (food) food.nutrients.forEach(n => foodCovered.add(n));
   });
 
-  let nutrients;
-  let weekCov = null;
+  const suppCovered = new Set();
+  loggedSupps.forEach(suppId => {
+    const supp = SUPPLEMENTS.find(s => s.id === suppId);
+    if (supp) supp.nutrients.forEach(n => suppCovered.add(n));
+  });
+
+  let nutrients, weekCov = null;
   if (view === 'weekly') {
     weekCov = getWeeklyNutrientCoverage();
     nutrients = MICRONUTRIENTS;
@@ -1491,22 +1525,21 @@ function renderNutrientGrid(loggedFoods) {
 
   const cards = nutrients.map(n => {
     let cardClass = '', statusText = '';
-    if (n.suppFull) {
-      cardClass = 'supp';
-      statusText = '💊 ' + n.supplement;
-    } else if (view === 'weekly' && weekCov) {
+    if (view === 'weekly' && weekCov) {
       const days = weekCov.coverage[n.id] || 0;
       const total = weekCov.totalDays;
       const thresh = n.cat === 'daily' ? Math.ceil(total * 0.6) : 1;
       if (days >= thresh) { cardClass = 'covered'; statusText = `✓ ${days}/${total} days`; }
-      else if (days > 0 || n.supplement) { cardClass = 'partial'; statusText = days > 0 ? `${days}/${total} days` : `0/${total} · supp`; }
+      else if (days > 0) { cardClass = 'partial'; statusText = `${days}/${total} days`; }
       else { statusText = `0/${total} days`; }
     } else {
-      if (foodCovered.has(n.id)) { cardClass = 'covered'; statusText = '✓ Covered'; }
-      else if (n.supplement) { cardClass = 'partial'; statusText = '💊 Supplement'; }
-      else { statusText = '—'; }
+      const byFood = foodCovered.has(n.id);
+      const bySupp = suppCovered.has(n.id);
+      if (byFood && bySupp) { cardClass = 'covered'; statusText = '✓ Food + Supp'; }
+      else if (byFood)      { cardClass = 'covered'; statusText = '✓ Food'; }
+      else if (bySupp)      { cardClass = 'supp';    statusText = '💊 Supplement'; }
+      else                  { statusText = '—'; }
     }
-    const suppNote = n.supplement && !n.suppFull ? `<br><em>Supp: ${n.supplement}</em>` : '';
     return `
       <div class="nutrient-card ${cardClass}">
         <div class="nutrient-card-top">
@@ -1514,7 +1547,7 @@ function renderNutrientGrid(loggedFoods) {
           <button class="nutrient-info-btn" onclick="toggleNutrientDesc('${n.id}')">ⓘ</button>
         </div>
         <div class="nutrient-status">${statusText}</div>
-        <div class="nutrient-desc hidden" id="nd-${n.id}">${n.desc}${suppNote}</div>
+        <div class="nutrient-desc hidden" id="nd-${n.id}">${n.desc}</div>
       </div>`;
   }).join('');
 
@@ -1530,15 +1563,15 @@ function getWeeklyNutrientCoverage() {
 
   const coverage = {};
   MICRONUTRIENTS.forEach(n => { coverage[n.id] = 0; });
-  // Supplements count every day
-  pastDates.forEach(() => { coverage['vitD']++; coverage['omega3']++; });
 
   pastDates.forEach(date => {
-    const dayFoods = state.microLogs.filter(l => l.date === date).map(l => l.food);
+    const dayLogs = state.microLogs.filter(l => l.date === date).map(l => l.food);
     const dayCovered = new Set();
-    dayFoods.forEach(foodId => {
-      const food = FOODS.find(f => f.id === foodId);
+    dayLogs.forEach(id => {
+      const food = FOODS.find(f => f.id === id);
       if (food) food.nutrients.forEach(n => dayCovered.add(n));
+      const supp = SUPPLEMENTS.find(s => s.id === id);
+      if (supp) supp.nutrients.forEach(n => dayCovered.add(n));
     });
     dayCovered.forEach(n => { if (coverage[n] !== undefined) coverage[n]++; });
   });

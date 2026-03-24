@@ -885,6 +885,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   padding: 0 0 0 4px;
   flex-shrink: 0;
 }
+.nutrient-sources { font-size: 0.85rem; margin-top: 4px; letter-spacing: 0.05em; }
 .nutrient-desc {
   font-size: 0.72rem;
   color: var(--text-muted);

@@ -1646,10 +1646,15 @@ function renderSaunaAlert(date, dayLogs) {
 
 function renderNutrientGrid(dayLogs) {
   const view = state.microsTab;
-  let nutrients, weekData = null;
+  let nutrients, weekData = null, weekLogs = [];
   if (view === 'weekly') {
     weekData = getWeeklyNutrientCoverage();
     nutrients = MICRONUTRIENTS;
+    const today = todayStr();
+    const dow = (new Date().getDay() + 6) % 7;
+    const weekStart = addDays(today, -dow);
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    weekLogs = state.microLogs.filter(l => weekDates.includes(l.date));
   } else if (view === 'sauna') {
     nutrients = MICRONUTRIENTS.filter(n => n.sauna);
   } else {
@@ -1657,6 +1662,7 @@ function renderNutrientGrid(dayLogs) {
   }
 
   const todayAmounts = getTotalNutrientAmounts(dayLogs);
+  const sourceLogs = view === 'weekly' ? weekLogs : dayLogs;
 
   const cards = nutrients.map(n => {
     let cardClass = '', barColor = '', statusHtml = '';
@@ -1681,6 +1687,10 @@ function renderNutrientGrid(dayLogs) {
         <div class="nutrient-amt">${formatNutrientAmt(amt, n.unit)} / ${n.rda} ${n.unit} RDA</div>
         <div class="nutrient-bar-wrap"><div class="nutrient-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
     }
+    const contributors = getTopContributors(n.id, sourceLogs);
+    const sourcesHtml = contributors.length
+      ? `<div class="nutrient-sources">${contributors.join(' ')}</div>`
+      : '';
     return `
       <div class="nutrient-card ${cardClass}">
         <div class="nutrient-card-top">
@@ -1688,6 +1698,7 @@ function renderNutrientGrid(dayLogs) {
           <button class="nutrient-info-btn" onclick="toggleNutrientDesc('${n.id}')">ⓘ</button>
         </div>
         ${statusHtml}
+        ${sourcesHtml}
         <div class="nutrient-desc hidden" id="nd-${n.id}">${n.desc}</div>
       </div>`;
   }).join('');
@@ -1695,6 +1706,29 @@ function renderNutrientGrid(dayLogs) {
   const title = view === 'sauna' ? 'Sauna Recovery' : view === 'weekly' ? 'This Week' : 'Today';
   const gridHtml = `<div class="card"><div class="card-header"><h3>${title}</h3></div><div class="nutrient-grid">${cards}</div></div>`;
   return view === 'weekly' ? gridHtml + renderWeekDayLog() : gridHtml;
+}
+
+function getTopContributors(nutrientId, logs, maxCount = 4) {
+  const byFood = new Map();
+  logs.forEach(l => {
+    const grams = parseFloat(l.grams || 100);
+    let contrib = 0, emoji = '';
+    if (l.food.startsWith('supp_')) {
+      const supp = SUPPLEMENTS.find(s => s.id === l.food);
+      if (supp && supp.amounts[nutrientId]) { contrib = supp.amounts[nutrientId] * grams; emoji = supp.emoji; }
+    } else {
+      const food = FOODS.find(f => f.id === l.food);
+      if (food && (food.per100g[nutrientId] || 0) > 0) { contrib = food.per100g[nutrientId] * (grams / 100); emoji = food.emoji; }
+    }
+    if (contrib > 0) {
+      const cur = byFood.get(l.food) || { emoji, total: 0 };
+      byFood.set(l.food, { emoji, total: cur.total + contrib });
+    }
+  });
+  return [...byFood.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, maxCount)
+    .map(x => x.emoji);
 }
 
 function shortNutrientName(n) {

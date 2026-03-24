@@ -822,6 +822,29 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   overflow: hidden;
 }
 .nutrient-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; min-width: 0; }
+.sauna-alert-card {
+  border: 1px solid var(--sauna);
+  background: var(--sauna-dim);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 4px;
+}
+.sauna-alert-title { font-size: 0.82rem; font-weight: 700; color: var(--sauna-light); margin-bottom: 10px; }
+.sauna-alert-section { margin-bottom: 7px; }
+.sauna-alert-section:last-child { margin-bottom: 0; }
+.sauna-alert-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; margin-bottom: 5px; }
+.sauna-alert-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.sauna-alert-tag {
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 12px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.sauna-alert-tag em { font-style: normal; font-weight: 700; }
+.sauna-alert-tag.focus { background: rgba(220,38,38,0.2); color: var(--sauna-light); border: 1px solid rgba(220,38,38,0.4); }
+.sauna-alert-tag.good  { background: var(--micros-dim); color: var(--micros-light); border: 1px solid rgba(132,204,22,0.3); }
 .nutrient-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

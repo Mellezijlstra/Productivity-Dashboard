@@ -1592,7 +1592,10 @@ function renderMicroContent() {
       ${v.charAt(0).toUpperCase() + v.slice(1)}
     </button>`).join('');
 
+  const saunaAlertHtml = renderSaunaAlert(microDate, dayLogs);
+
   main.innerHTML = `
+    ${saunaAlertHtml}
     <div class="card">
       <div class="card-header">
         <h3>Foods Eaten</h3>
@@ -1608,6 +1611,37 @@ function renderMicroContent() {
     </div>
     <div class="micros-view-tabs">${viewTabs}</div>
     ${renderNutrientGrid(dayLogs)}`;
+}
+
+function renderSaunaAlert(date, dayLogs) {
+  if (!state.saunaLogs) return '';
+  const hadSauna = state.saunaLogs.some(l => l.date === date && l.protocol !== 'foundation');
+  if (!hadSauna) return '';
+
+  const amts = getTotalNutrientAmounts(dayLogs);
+  const saunaNutrients = MICRONUTRIENTS.filter(n => n.sauna);
+
+  const withPct = saunaNutrients.map(n => ({
+    n,
+    pct: n.rda > 0 ? Math.min(100, Math.round(((amts[n.id] || 0) / n.rda) * 100)) : 0,
+  })).sort((a, b) => a.pct - b.pct);
+
+  const focusOn  = withPct.filter(x => x.pct < 50);
+  const lookGood = withPct.filter(x => x.pct >= 50);
+
+  const focusTags = focusOn.map(x =>
+    `<span class="sauna-alert-tag focus">${shortNutrientName(x.n)} <em>${x.pct}%</em></span>`
+  ).join('');
+  const goodTags = lookGood.map(x =>
+    `<span class="sauna-alert-tag good">${shortNutrientName(x.n)} <em>${x.pct}%</em></span>`
+  ).join('');
+
+  return `
+    <div class="sauna-alert-card">
+      <div class="sauna-alert-title">🔥 Sauna day — replenish checklist</div>
+      ${focusOn.length ? `<div class="sauna-alert-section"><span class="sauna-alert-label">Focus on</span><div class="sauna-alert-tags">${focusTags}</div></div>` : ''}
+      ${lookGood.length ? `<div class="sauna-alert-section"><span class="sauna-alert-label">Looking good</span><div class="sauna-alert-tags">${goodTags}</div></div>` : ''}
+    </div>`;
 }
 
 function renderNutrientGrid(dayLogs) {

@@ -820,8 +820,11 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   border-radius: 2px;
   margin: 4px 0 2px;
   overflow: hidden;
+  display: flex;
 }
-.nutrient-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; min-width: 0; }
+.nutrient-bar-fill { height: 100%; border-radius: 2px 0 0 2px; transition: width 0.3s; min-width: 0; }
+.nutrient-bar-loss { height: 100%; background: var(--sauna); opacity: 0.75; transition: width 0.3s; min-width: 0; border-radius: 0 2px 2px 0; }
+.sauna-loss-line { font-size: 0.68rem; color: var(--sauna-light); margin-top: 1px; }
 .sauna-alert-card {
   border: 1px solid var(--sauna);
   background: var(--sauna-dim);

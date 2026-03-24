@@ -277,6 +277,17 @@ const MICRONUTRIENTS = [
     desc: 'Anti-inflammatory, cardiovascular health, brain function. Reduces inflammation after sauna.' },
 ];
 
+// Estimated nutrient losses / increased demand per sauna session
+const SAUNA_LOSSES = {
+  potassium: 400,  // mg  — direct sweat loss
+  magnesium: 36,   // mg  — direct sweat loss
+  zinc:      1,    // mg  — direct sweat loss
+  vitC:      30,   // mg  — increased antioxidant demand
+  selenium:  12,   // µg  — direct sweat loss
+  vitE:      2,    // mg  — increased oxidative demand
+  omega3:    150,  // mg  — increased anti-inflammatory demand
+};
+
 const state = {
   saunaLogs: [],
   dayLogs: [],
@@ -1664,6 +1675,12 @@ function renderNutrientGrid(dayLogs) {
   const todayAmounts = getTotalNutrientAmounts(dayLogs);
   const sourceLogs = view === 'weekly' ? weekLogs : dayLogs;
 
+  // Sauna deductions (daily + sauna views only)
+  const microDate = (() => { const el = document.getElementById('micro-date'); return el?.value || todayStr(); })();
+  const saunaCount = view !== 'weekly'
+    ? (state.saunaLogs || []).filter(l => l.date === microDate && l.protocol !== 'foundation').length
+    : 0;
+
   const cards = nutrients.map(n => {
     let cardClass = '', barColor = '', statusHtml = '';
     if (view === 'weekly' && weekData) {
@@ -1678,14 +1695,24 @@ function renderNutrientGrid(dayLogs) {
         <div class="nutrient-bar-wrap"><div class="nutrient-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
         <div class="nutrient-status">${pct}% · ${covDays}/${weekData.totalDays}d ≥50% RDA</div>`;
     } else {
-      const amt = todayAmounts[n.id] || 0;
-      const pct = n.rda > 0 ? Math.min(100, Math.round((amt / n.rda) * 100)) : 0;
-      if (pct >= 80) { cardClass = 'covered'; barColor = 'var(--micros)'; }
-      else if (pct >= 40) { cardClass = 'partial'; barColor = 'var(--warning)'; }
+      const rawAmt  = todayAmounts[n.id] || 0;
+      const lossAmt = saunaCount > 0 ? (SAUNA_LOSSES[n.id] || 0) * saunaCount : 0;
+      const netAmt  = Math.max(0, rawAmt - lossAmt);
+      const netPct  = n.rda > 0 ? Math.min(100, Math.round((netAmt  / n.rda) * 100)) : 0;
+      const lossPct = n.rda > 0 ? Math.min(100 - netPct, Math.round((Math.min(lossAmt, rawAmt) / n.rda) * 100)) : 0;
+      if (netPct >= 80) { cardClass = 'covered'; barColor = 'var(--micros)'; }
+      else if (netPct >= 40) { cardClass = 'partial'; barColor = 'var(--warning)'; }
       else { barColor = 'var(--danger)'; }
+      const lossLine = lossAmt > 0
+        ? `<div class="sauna-loss-line">🔥 −${formatNutrientAmt(lossAmt, n.unit)} sauna</div>`
+        : '';
       statusHtml = `
-        <div class="nutrient-amt">${formatNutrientAmt(amt, n.unit)} / ${n.rda} ${n.unit} RDA</div>
-        <div class="nutrient-bar-wrap"><div class="nutrient-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
+        <div class="nutrient-amt">${formatNutrientAmt(netAmt, n.unit)} / ${n.rda} ${n.unit} RDA${lossAmt > 0 ? ` (logged ${formatNutrientAmt(rawAmt, n.unit)})` : ''}</div>
+        <div class="nutrient-bar-wrap">
+          <div class="nutrient-bar-fill" style="width:${netPct}%;background:${barColor}"></div>
+          ${lossPct > 0 ? `<div class="nutrient-bar-loss" style="width:${lossPct}%"></div>` : ''}
+        </div>
+        ${lossLine}`;
     }
     const contributors = getTopContributors(n.id, sourceLogs);
     const sourcesHtml = contributors.length

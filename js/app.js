@@ -231,6 +231,12 @@ const FOODS = [
     per100g: { vitC:6.1,  vitA:4,   vitB6:0.1,  vitB12:0,    iron:2.27, zinc:1.37,  potassium:436,  calcium:63,   iodine:2,   magnesium:64,  vitD:0,    folate:311, vitK:26.7,  selenium:1.5,  copper:0.41, manganese:1.02, choline:56.7, vitE:0.68, omega3:0   }},
   { id: 'beetroot',      name: 'Beetroot',        emoji: '🫀',
     per100g: { vitC:3.6,  vitA:1,   vitB6:0.06, vitB12:0,    iron:0.79, zinc:0.35,  potassium:305,  calcium:16,   iodine:0,   magnesium:23,  vitD:0,    folate:80,  vitK:0.2,   selenium:0.7,  copper:0.08, manganese:0.33, choline:6.5,  vitE:0.04, omega3:0   }},
+  { id: 'cantaloupe',    name: 'Cantaloupe',      emoji: '🍈',
+    per100g: { vitC:36.7, vitA:169, vitB6:0.07, vitB12:0,    iron:0.21, zinc:0.18,  potassium:267,  calcium:9,    iodine:0,   magnesium:12,  vitD:0,    folate:21,  vitK:2.5,   selenium:0.4,  copper:0.04, manganese:0.04, choline:7.6,  vitE:0.05, omega3:34  }},
+  { id: 'serrano',       name: 'Serrano Ham',     emoji: '🍖',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.5,  vitB12:1.0,  iron:1.7,  zinc:3.0,   potassium:490,  calcium:10,   iodine:3,   magnesium:25,  vitD:0.5,  folate:3,   vitK:0,     selenium:25,   copper:0.1,  manganese:0.02, choline:90,   vitE:0.5,  omega3:100 }},
+  { id: 'pear',          name: 'Pear',            emoji: '🍐',
+    per100g: { vitC:4.3,  vitA:1,   vitB6:0.03, vitB12:0,    iron:0.18, zinc:0.1,   potassium:116,  calcium:9,    iodine:0,   magnesium:7,   vitD:0,    folate:7,   vitK:4.4,   selenium:0.1,  copper:0.08, manganese:0.05, choline:5.1,  vitE:0.12, omega3:0   }},
 ];
 
 const SUPPLEMENTS = [
@@ -240,6 +246,8 @@ const SUPPLEMENTS = [
     amounts: { omega3: 1110, vitD: 10, vitA: 250, vitE: 3 } },
   { id: 'supp_mag',    name: 'Magnesium Bisglycinate', emoji: '💊', serving: '1 capsule',
     amounts: { magnesium: 150 } },
+  { id: 'supp_zinc',   name: 'Zinc 15mg',              emoji: '💊', serving: '1 capsule',
+    amounts: { zinc: 15 } },
 ];
 
 const MICRONUTRIENTS = [
@@ -312,6 +320,7 @@ const state = {
   microLogs: [],
   microsTab: 'daily',
   selectedMicroFood: null,
+  foodSourcesOpen: false,
   waterLogs: [],
   weeklyReviewOffset: 0,
   settings: {},
@@ -1737,7 +1746,8 @@ function renderMicroContent() {
       <div class="food-chips">${suppChips}</div>
     </div>
     <div class="micros-view-tabs">${viewTabs}</div>
-    ${renderNutrientGrid(dayLogs)}`;
+    ${renderNutrientGrid(dayLogs)}
+    ${renderFoodSourcesTable()}`;
 }
 
 function renderSaunaAlert(date, dayLogs) {
@@ -1996,6 +2006,44 @@ async function retryMicrosLoad() {
   if (error) { showToast('micro_logs table not found — run the SQL first', 'error'); return; }
   state.microLogs = data || [];
   renderMicroTab();
+}
+
+function toggleFoodSources() {
+  state.foodSourcesOpen = !state.foodSourcesOpen;
+  const body = document.getElementById('food-sources-body');
+  const icon = document.getElementById('food-sources-toggle-icon');
+  if (body) body.classList.toggle('hidden', !state.foodSourcesOpen);
+  if (icon) icon.textContent = state.foodSourcesOpen ? '▲' : '▼';
+}
+
+function renderFoodSourcesTable() {
+  const rows = MICRONUTRIENTS.map(n => {
+    const foodSources = FOODS
+      .filter(f => (f.per100g[n.id] || 0) > 0)
+      .sort((a, b) => b.per100g[n.id] - a.per100g[n.id])
+      .slice(0, 5)
+      .map(f => `<span class="src-item">${f.emoji} ${f.name} <em>${formatNutrientAmt(f.per100g[n.id], n.unit)}/100g</em></span>`);
+
+    const suppSources = SUPPLEMENTS
+      .filter(s => s.amounts && (s.amounts[n.id] || 0) > 0)
+      .map(s => `<span class="src-item src-item-supp">${s.emoji} ${s.name} <em>${formatNutrientAmt(s.amounts[n.id], n.unit)}/serving</em></span>`);
+
+    return `
+      <div class="src-row">
+        <div class="src-nutrient">${n.name} <span class="src-rda">RDA ${n.rda} ${n.unit}</span></div>
+        <div class="src-foods">${[...foodSources, ...suppSources].join('')}</div>
+      </div>`;
+  }).join('');
+
+  const isOpen = state.foodSourcesOpen;
+  return `
+    <div class="card">
+      <div class="card-header src-toggle-header" onclick="toggleFoodSources()">
+        <h3>Food Sources Reference</h3>
+        <span id="food-sources-toggle-icon" class="src-toggle-icon">${isOpen ? '▲' : '▼'}</span>
+      </div>
+      <div id="food-sources-body"${isOpen ? '' : ' class="hidden"'}>${rows}</div>
+    </div>`;
 }
 
 // ==========================================

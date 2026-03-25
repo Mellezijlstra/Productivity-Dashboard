@@ -1087,6 +1087,27 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .day-type-suggested { font-size: 0.72rem; color: var(--sauna-light); font-weight: 600; margin-top: 4px; }
 .day-type-check { font-size: 1rem; color: var(--sauna-light); font-weight: 700; flex-shrink: 0; align-self: center; }
 
+/* ==========================================
+   Food Sources Reference
+   ========================================== */
+.src-toggle-header { cursor: pointer; user-select: none; }
+.src-toggle-icon { font-size: 0.75rem; color: var(--text-muted); }
+.src-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.src-row:last-child { border-bottom: none; }
+.src-nutrient { font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.src-rda { font-weight: 400; font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; }
+.src-foods { display: flex; flex-wrap: wrap; gap: 6px; }
+.src-item {
+  font-size: 0.72rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px 8px;
+  color: var(--text-dim);
+}
+.src-item em { color: var(--text-muted); font-style: normal; }
+.src-item-supp { border-color: var(--ai); background: var(--ai-dim); }
+
 /* Protocol cards */
 .sauna-protocols-grid {
   display: grid;

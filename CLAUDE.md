@@ -51,6 +51,10 @@ All application state lives in a single `state` object (defined near the top of 
 | TIMED HABITS | Per-habit minute goals (min/max), log-time modal |
 | INIT | IIFE that reads `localStorage` and calls `launchApp` if credentials exist |
 
+### What requires Supabase changes vs. what doesn't
+
+Adding or editing entries in `FOODS`, `SUPPLEMENTS`, `MICRONUTRIENTS`, `DEFAULT_COURSES`, or `DEFAULT_HABITS` in `app.js` is purely client-side — no Supabase migration needed. Only structural changes (new tables, new columns) require running SQL in the Supabase editor.
+
 ### Supabase tables
 
 Core tables (created by `SETUP_SQL`): `settings`, `courses`, `study_logs`, `weight_logs`, `nutrition_logs`, `habits`, `habit_logs`, `sauna_logs`, `day_logs`, `notes`, `water_logs`, `micro_logs`.

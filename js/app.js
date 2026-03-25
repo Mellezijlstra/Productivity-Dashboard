@@ -129,6 +129,14 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 ALTER TABLE notes DISABLE ROW LEVEL SECURITY;
 
+CREATE TABLE IF NOT EXISTS water_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL,
+  amount_ml INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE water_logs DISABLE ROW LEVEL SECURITY;
+
 CREATE TABLE IF NOT EXISTS micro_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   date DATE NOT NULL,
@@ -304,6 +312,8 @@ const state = {
   microLogs: [],
   microsTab: 'daily',
   selectedMicroFood: null,
+  waterLogs: [],
+  weeklyReviewOffset: 0,
   settings: {},
   selectedDeficit: 500,
   currentWeekOffset: 0,
@@ -494,6 +504,9 @@ async function loadAllData() {
 
   const { data: microLogs, error: microErr } = await db.from('micro_logs').select('*').order('date', { ascending: false });
   state.microLogs = microErr ? null : (microLogs || []);
+
+  const { data: waterLogs, error: waterErr } = await db.from('water_logs').select('*').order('date', { ascending: false });
+  state.waterLogs = waterErr ? [] : (waterLogs || []);
 }
 
 async function saveSetting(key, value) {
@@ -1398,6 +1411,7 @@ function renderNotes() {
   notice.classList.add('hidden');
   main.classList.remove('hidden');
   if (state.notesTab === 'daily') renderDailyNotes(main);
+  else if (state.notesTab === 'weekly') renderWeeklyReview(main);
   else renderInsightNotes(main);
 }
 
@@ -1452,6 +1466,92 @@ function renderInsightNotes(el) {
       </div>`).join('')}</div>` : '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:16px">No insights yet. Add your first one above.</p>'}`;
 }
 
+function renderWeeklyReview(el) {
+  const offset = state.weeklyReviewOffset || 0;
+  const today = todayStr();
+  const dow = (new Date().getDay() + 6) % 7;
+  const thisMonday = addDays(today, -dow);
+  const monday = addDays(thisMonday, offset * 7);
+  const sunday = addDays(monday, 6);
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const pastDates = weekDates.filter(d => d <= today);
+  const isCurrentWeek = offset === 0;
+
+  // — Stats —
+  const weekStudyMin = state.studyLogs.filter(l => weekDates.includes(l.date)).reduce((s, l) => s + (l.duration_minutes || 0), 0);
+  const saunaSessions = (state.saunaLogs || []).filter(l => l.protocol !== 'foundation' && weekDates.includes(l.date)).length;
+  const weekNutrition = state.nutritionLogs.filter(l => pastDates.includes(l.date));
+  const avgCals = weekNutrition.length ? Math.round(weekNutrition.reduce((s, l) => s + l.calories, 0) / weekNutrition.length) : null;
+  const avgProtein = weekNutrition.length ? Math.round(weekNutrition.reduce((s, l) => s + parseFloat(l.protein || 0), 0) / weekNutrition.length) : null;
+  const weekWeights = state.weightLogs.filter(l => weekDates.includes(l.date)).map(l => parseFloat(l.weight));
+  const weightStart = weekWeights.length ? weekWeights[0] : null;
+  const weightEnd = weekWeights.length ? weekWeights[weekWeights.length - 1] : null;
+  const weightDelta = weightStart && weightEnd ? (weightEnd - weightStart).toFixed(1) : null;
+  const habitTotal = state.habits.length * pastDates.length;
+  const habitDone = pastDates.reduce((sum, d) => sum + state.habits.filter(h => {
+    const log = state.habitLogs.find(l => l.habit_id === h.id && l.date === d);
+    return log && log.completed;
+  }).length, 0);
+  const habitPct = habitTotal > 0 ? Math.round((habitDone / habitTotal) * 100) : null;
+
+  const dailyNutrients = MICRONUTRIENTS.filter(n => n.cat === 'daily');
+  const microCovDays = pastDates.map(d => {
+    const logs = state.microLogs.filter(l => l.date === d);
+    if (!logs.length) return null;
+    const amts = getTotalNutrientAmounts(logs);
+    const covered = dailyNutrients.filter(n => n.rda > 0 && (amts[n.id] || 0) >= n.rda * 0.5).length;
+    return Math.round((covered / dailyNutrients.length) * 100);
+  }).filter(x => x !== null);
+  const avgMicros = microCovDays.length ? Math.round(microCovDays.reduce((a, b) => a + b, 0) / microCovDays.length) : null;
+
+  const statsHtml = `
+    <div class="wr-stats">
+      <div class="wr-stat"><span class="wr-stat-icon">🧠</span><span class="wr-stat-val">${weekStudyMin >= 60 ? (weekStudyMin/60).toFixed(1)+'h' : weekStudyMin+'m'}</span><span class="wr-stat-label">Study</span></div>
+      <div class="wr-stat"><span class="wr-stat-icon">🔥</span><span class="wr-stat-val">${saunaSessions || '—'}</span><span class="wr-stat-label">Sauna</span></div>
+      <div class="wr-stat"><span class="wr-stat-icon">🍽️</span><span class="wr-stat-val">${avgCals ? avgCals+' kcal' : '—'}</span><span class="wr-stat-label">Avg cal</span></div>
+      <div class="wr-stat"><span class="wr-stat-icon">🥩</span><span class="wr-stat-val">${avgProtein ? avgProtein+'g' : '—'}</span><span class="wr-stat-label">Avg protein</span></div>
+      <div class="wr-stat"><span class="wr-stat-icon">⚖️</span><span class="wr-stat-val">${weightEnd ? weightEnd+' kg' : '—'}</span><span class="wr-stat-label">${weightDelta ? (parseFloat(weightDelta) <= 0 ? '↓' : '↑')+' '+Math.abs(weightDelta)+' kg' : 'Weight'}</span></div>
+      <div class="wr-stat"><span class="wr-stat-icon">✅</span><span class="wr-stat-val">${habitPct !== null ? habitPct+'%' : '—'}</span><span class="wr-stat-label">Habits</span></div>
+      <div class="wr-stat"><span class="wr-stat-icon">🥦</span><span class="wr-stat-val">${avgMicros !== null ? avgMicros+'%' : '—'}</span><span class="wr-stat-label">Micros</span></div>
+    </div>`;
+
+  // — Existing review for this week —
+  const existingReview = (state.notes || []).find(n => n.category === 'weekly' && n.date === monday);
+  const TEMPLATE = `What went well this week?\n\n\nWhat to improve?\n\n\nFocus for next week?\n\n`;
+
+  // — Past weekly reviews —
+  const pastReviews = (state.notes || [])
+    .filter(n => n.category === 'weekly' && n.date !== monday)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="wr-nav">
+        <button class="wr-nav-btn" onclick="shiftWeeklyReview(-1)">←</button>
+        <span class="wr-nav-title">Week of ${formatDateDisplay(monday)} – ${formatDateDisplay(sunday)}</span>
+        <button class="wr-nav-btn" onclick="shiftWeeklyReview(1)" ${isCurrentWeek ? 'disabled style="opacity:0.3"' : ''}>→</button>
+      </div>
+      ${statsHtml}
+      <textarea id="wr-textarea" class="note-textarea" style="margin-top:14px" placeholder="Your weekly reflection...">${existingReview ? existingReview.content : TEMPLATE}</textarea>
+      <button class="btn-secondary" onclick="saveNote('weekly')" style="margin-top:12px">${existingReview ? 'Update' : 'Save Review'}</button>
+    </div>
+    ${pastReviews.length ? `<div class="notes-history">${pastReviews.map(n => `
+      <div class="note-entry card">
+        <div class="note-entry-header">
+          <span class="note-entry-date">Week of ${formatDateDisplay(n.date)}</span>
+          <button class="btn-danger btn-sm" onclick="deleteNote('${n.id}')">✕</button>
+        </div>
+        <div class="note-entry-content">${n.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>
+      </div>`).join('')}</div>` : ''}`;
+}
+
+function shiftWeeklyReview(dir) {
+  state.weeklyReviewOffset = (state.weeklyReviewOffset || 0) + dir;
+  const main = document.getElementById('notes-main-content');
+  if (main) renderWeeklyReview(main);
+}
+
 async function saveNote(category) {
   const today = todayStr();
   if (category === 'daily') {
@@ -1464,6 +1564,22 @@ async function saveNote(category) {
       existing.content = data.content;
     } else {
       const { data, error } = await db.from('notes').insert({ category, date: today, content }).select().single();
+      if (error) { showToast('Failed to save', 'error'); return; }
+      state.notes.unshift(data);
+    }
+  } else if (category === 'weekly') {
+    const content = document.getElementById('wr-textarea').value.trim();
+    if (!content) { showToast('Write something first', 'error'); return; }
+    const offset = state.weeklyReviewOffset || 0;
+    const dow = (new Date().getDay() + 6) % 7;
+    const monday = addDays(addDays(today, -dow), offset * 7);
+    const existing = state.notes.find(n => n.category === 'weekly' && n.date === monday);
+    if (existing) {
+      const { data, error } = await db.from('notes').update({ content }).eq('id', existing.id).select().single();
+      if (error) { showToast('Failed to save', 'error'); return; }
+      existing.content = data.content;
+    } else {
+      const { data, error } = await db.from('notes').insert({ category, date: monday, content }).select().single();
       if (error) { showToast('Failed to save', 'error'); return; }
       state.notes.unshift(data);
     }
@@ -2423,6 +2539,69 @@ function initTimerCourseSelect() {
 // HOME / WEEKLY DIGEST
 // ==========================================
 
+// ==========================================
+// WATER TRACKER
+// ==========================================
+
+function renderWaterCard() {
+  const el = document.getElementById('water-card');
+  if (!el) return;
+  const today = todayStr();
+  const todayLogs = state.waterLogs.filter(l => l.date === today);
+  const totalMl = todayLogs.reduce((s, l) => s + (l.amount_ml || 0), 0);
+  const hadSauna = (state.saunaLogs || []).some(l => l.date === today && l.protocol !== 'foundation');
+  const target = 2500 + (hadSauna ? 500 : 0);
+  const pct = Math.min(100, Math.round((totalMl / target) * 100));
+  const barColor = pct >= 100 ? 'var(--habits)' : pct >= 60 ? 'var(--success)' : pct >= 30 ? 'var(--warning)' : 'var(--danger)';
+  const totalDisplay = totalMl >= 1000 ? (totalMl / 1000).toFixed(1) + ' L' : totalMl + ' ml';
+  const targetDisplay = (target / 1000).toFixed(1) + ' L';
+
+  el.innerHTML = `
+    <div class="digest-label" style="margin-top:16px">💧 Water</div>
+    <div class="card water-card">
+      <div class="water-header">
+        <span class="water-total">${totalDisplay}</span>
+        <span class="water-target">/ ${targetDisplay}${hadSauna ? ' <span class="water-sauna-tag">🔥 sauna +0.5L</span>' : ''}</span>
+      </div>
+      <div class="water-bar-wrap"><div class="water-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="water-buttons">
+        <button class="water-btn" onclick="logWater(250)">+250ml</button>
+        <button class="water-btn" onclick="logWater(500)">+500ml</button>
+        <button class="water-btn" onclick="logWater(750)">+750ml</button>
+        <div class="water-custom-row">
+          <input type="number" id="water-custom-input" class="qty-input" placeholder="ml" min="1" max="2000" style="width:60px">
+          <button class="water-btn" onclick="logWaterCustom()">Add</button>
+        </div>
+      </div>
+      ${todayLogs.length ? `<div class="water-log-list">${todayLogs.slice().reverse().map(l =>
+        `<span class="water-log-entry">${l.amount_ml}ml <button class="micro-log-del" onclick="removeWaterLog('${l.id}')">✕</button></span>`
+      ).join('')}</div>` : ''}
+    </div>`;
+}
+
+async function logWater(ml) {
+  const date = todayStr();
+  const { data, error } = await db.from('water_logs').insert({ date, amount_ml: ml }).select().single();
+  if (error) { showToast('Failed to log water', 'error'); return; }
+  state.waterLogs.unshift(data);
+  renderWaterCard();
+}
+
+async function logWaterCustom() {
+  const input = document.getElementById('water-custom-input');
+  const ml = parseInt(input?.value);
+  if (!ml || ml <= 0) { showToast('Enter a valid amount', 'error'); return; }
+  input.value = '';
+  await logWater(ml);
+}
+
+async function removeWaterLog(id) {
+  const { error } = await db.from('water_logs').delete().eq('id', id);
+  if (error) { showToast('Failed to remove', 'error'); return; }
+  state.waterLogs = state.waterLogs.filter(l => l.id !== id);
+  renderWaterCard();
+}
+
 function renderHome() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -2443,6 +2622,7 @@ function renderHome() {
   }
 
   renderTodayDigest();
+  renderWaterCard();
   renderTodos();
   renderWeekDigest();
 }

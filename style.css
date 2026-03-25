@@ -825,6 +825,44 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .nutrient-bar-fill { height: 100%; border-radius: 2px 0 0 2px; transition: width 0.3s; min-width: 0; }
 .nutrient-bar-loss { height: 100%; background: var(--sauna); opacity: 0.75; transition: width 0.3s; min-width: 0; border-radius: 0 2px 2px 0; }
 .sauna-loss-line { font-size: 0.68rem; color: var(--sauna-light); margin-top: 1px; }
+/* Water Tracker */
+.water-card { padding: 14px 16px; }
+.water-header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
+.water-total { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+.water-target { font-size: 0.82rem; color: var(--text-muted); }
+.water-sauna-tag { font-size: 0.72rem; color: var(--sauna-light); background: var(--sauna-dim); padding: 2px 6px; border-radius: 8px; margin-left: 4px; }
+.water-bar-wrap { height: 6px; background: var(--surface-3); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+.water-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.water-buttons { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.water-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.water-btn:hover { border-color: var(--habits); color: var(--habits); }
+.water-custom-row { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.water-log-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.water-log-entry { font-size: 0.78rem; color: var(--text-muted); background: var(--surface-3); padding: 3px 8px; border-radius: 10px; display: flex; align-items: center; gap: 4px; }
+
+/* Weekly Review */
+.wr-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.wr-nav-title { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+.wr-nav-btn { background: var(--surface-3); border: 1px solid var(--border); color: var(--text-dim); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.9rem; }
+.wr-nav-btn:hover:not(:disabled) { border-color: var(--notes); color: var(--notes); }
+.wr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 4px; }
+.wr-stat { background: var(--surface-3); border-radius: var(--radius-sm); padding: 10px 8px; text-align: center; }
+.wr-stat-icon { font-size: 1rem; display: block; margin-bottom: 3px; }
+.wr-stat-val { font-size: 0.9rem; font-weight: 700; color: var(--text); display: block; }
+.wr-stat-label { font-size: 0.65rem; color: var(--text-muted); display: block; margin-top: 2px; }
+@media (max-width: 480px) {
+  .wr-stats { grid-template-columns: repeat(3, 1fr); }
+}
+
 .sauna-alert-card {
   border: 1px solid var(--sauna);
   background: var(--sauna-dim);

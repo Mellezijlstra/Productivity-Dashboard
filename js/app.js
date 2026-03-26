@@ -237,6 +237,16 @@ const FOODS = [
     per100g: { vitC:0,    vitA:0,   vitB6:0.5,  vitB12:1.0,  iron:1.7,  zinc:3.0,   potassium:490,  calcium:10,   iodine:3,   magnesium:25,  vitD:0.5,  folate:3,   vitK:0,     selenium:25,   copper:0.1,  manganese:0.02, choline:90,   vitE:0.5,  omega3:100 }},
   { id: 'pear',          name: 'Pear',            emoji: '🍐',
     per100g: { vitC:4.3,  vitA:1,   vitB6:0.03, vitB12:0,    iron:0.18, zinc:0.1,   potassium:116,  calcium:9,    iodine:0,   magnesium:7,   vitD:0,    folate:7,   vitK:4.4,   selenium:0.1,  copper:0.08, manganese:0.05, choline:5.1,  vitE:0.12, omega3:0   }},
+  { id: 'orangejuice',   name: 'Orange Juice',    emoji: '🍊',
+    per100g: { vitC:50,   vitA:3,   vitB6:0.06, vitB12:0,    iron:0.2,  zinc:0.05,  potassium:200,  calcium:11,   iodine:0,   magnesium:11,  vitD:0,    folate:30,  vitK:0.1,   selenium:0.1,  copper:0.04, manganese:0.02, choline:8.4,  vitE:0.04, omega3:13  }},
+  { id: 'smoked_beef',   name: 'Runder Rook Vlees', emoji: '🥩',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.4,  vitB12:2.5,  iron:2.5,  zinc:5.5,   potassium:300,  calcium:15,   iodine:4,   magnesium:22,  vitD:0.1,  folate:5,   vitK:1.5,   selenium:25,   copper:0.1,  manganese:0.02, choline:100,  vitE:0.2,  omega3:30  }},
+  { id: 'whitebeans',    name: 'White Beans',     emoji: '🫘',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.14, vitB12:0,    iron:3.7,  zinc:1.0,   potassium:561,  calcium:90,   iodine:0,   magnesium:63,  vitD:0,    folate:130, vitK:6,     selenium:1.5,  copper:0.35, manganese:0.53, choline:55,   vitE:0.1,  omega3:60  }},
+  { id: 'cilantro',      name: 'Cilantro',        emoji: '🌿',
+    per100g: { vitC:27,   vitA:337, vitB6:0.15, vitB12:0,    iron:1.77, zinc:0.5,   potassium:521,  calcium:67,   iodine:0,   magnesium:26,  vitD:0,    folate:62,  vitK:310,   selenium:0.9,  copper:0.22, manganese:0.43, choline:12.8, vitE:2.5,  omega3:34  }},
+  { id: 'palermo',       name: 'Palermo Paprika', emoji: '🫑',
+    per100g: { vitC:120,  vitA:157, vitB6:0.3,  vitB12:0,    iron:0.43, zinc:0.25,  potassium:211,  calcium:10,   iodine:0,   magnesium:12,  vitD:0,    folate:46,  vitK:4.9,   selenium:0.3,  copper:0.12, manganese:0.16, choline:5.6,  vitE:3.1,  omega3:17  }},
 ];
 
 const SUPPLEMENTS = [

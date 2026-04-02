@@ -243,6 +243,8 @@ const FOODS = [
     per100g: { vitC:0,    vitA:0,   vitB6:0.4,  vitB12:2.5,  iron:2.5,  zinc:5.5,   potassium:300,  calcium:15,   iodine:4,   magnesium:22,  vitD:0.1,  folate:5,   vitK:1.5,   selenium:25,   copper:0.1,  manganese:0.02, choline:100,  vitE:0.2,   omega3:30,   omega6:360   }},
   { id: 'salmon',        name: 'Salmon',            emoji: '🐠',
     per100g: { vitC:0,    vitA:12,  vitB6:0.99, vitB12:3.18, iron:0.8,  zinc:0.64,  potassium:628,  calcium:14,   iodine:14,  magnesium:37,  vitD:13.1, folate:25,  vitK:0.5,   selenium:46.8, copper:0.29, manganese:0.02, choline:91,   vitE:3.55,  omega3:2260, omega6:1024  }},
+  { id: 'smoked_salmon', name: 'Smoked Salmon',     emoji: '🐟',
+    per100g: { vitC:0,    vitA:14,  vitB6:0.8,  vitB12:3.0,  iron:0.85, zinc:0.5,   potassium:450,  calcium:11,   iodine:14,  magnesium:28,  vitD:10.9, folate:3,   vitK:0.4,   selenium:40,   copper:0.25, manganese:0.01, choline:85,   vitE:2.5,   omega3:2050, omega6:880   }},
   { id: 'sardines',      name: 'Sardines',          emoji: '🐟',
     per100g: { vitC:0,    vitA:27,  vitB6:0.21, vitB12:8.9,  iron:2.92, zinc:1.31,  potassium:397,  calcium:382,  iodine:40,  magnesium:39,  vitD:4.8,  folate:10,  vitK:2.6,   selenium:52.7, copper:0.28, manganese:0.11, choline:75,   vitE:2,     omega3:2270, omega6:508   }},
   { id: 'serrano',       name: 'Serrano Ham',       emoji: '🍖',
@@ -1916,7 +1918,7 @@ function getTopContributors(nutrientId, logs, maxCount = 4) {
 }
 
 // EPA/DHA sources are fully bioavailable; everything else is plant ALA (~8% converts to active EPA/DHA)
-const EPA_DHA_SOURCES = new Set(['salmon', 'sardines', 'mackerel', 'tuna', 'oysters', 'eggs', 'supp_moller']);
+const EPA_DHA_SOURCES = new Set(['salmon', 'smoked_salmon', 'sardines', 'mackerel', 'tuna', 'oysters', 'eggs', 'supp_moller']);
 const ALA_CONVERSION = 0.08;
 
 function getEffectiveOmega3(logs) {

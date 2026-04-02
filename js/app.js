@@ -159,104 +159,116 @@ let weightChart = null;
 //   potassium(mg), calcium(mg), iodine(µg), magnesium(mg), vitD(µg), folate(µg),
 //   vitK(µg), selenium(µg), copper(mg), manganese(mg), choline(mg), vitE(mg), omega3(mg)
 const FOODS = [
-  { id: 'avocado',       name: 'Avocado',        emoji: '🥑',
-    per100g: { vitC:10,   vitA:7,   vitB6:0.26, vitB12:0,    iron:0.55, zinc:0.64,  potassium:485,  calcium:12,   iodine:1,   magnesium:29,  vitD:0,    folate:81,  vitK:21,    selenium:0.4,  copper:0.19, manganese:0.14, choline:14.2, vitE:2.07, omega3:110 }},
-  { id: 'chicken',       name: 'Chicken',         emoji: '🍗',
-    per100g: { vitC:0,    vitA:9,   vitB6:0.9,  vitB12:0.3,  iron:1.0,  zinc:1.8,   potassium:340,  calcium:15,   iodine:6,   magnesium:29,  vitD:0.1,  folate:4,   vitK:0,     selenium:27,   copper:0.07, manganese:0.02, choline:85,   vitE:0.3,  omega3:50  }},
-  { id: 'kiwi',          name: 'Kiwi',            emoji: '🥝',
-    per100g: { vitC:93,   vitA:4,   vitB6:0.06, vitB12:0,    iron:0.31, zinc:0.14,  potassium:312,  calcium:34,   iodine:0,   magnesium:17,  vitD:0,    folate:25,  vitK:40,    selenium:0.2,  copper:0.13, manganese:0.1,  choline:7.8,  vitE:1.5,  omega3:40  }},
-  { id: 'apple',         name: 'Apple',           emoji: '🍎',
-    per100g: { vitC:4.6,  vitA:3,   vitB6:0.04, vitB12:0,    iron:0.12, zinc:0.04,  potassium:107,  calcium:6,    iodine:0,   magnesium:5,   vitD:0,    folate:3,   vitK:2.2,   selenium:0,    copper:0.03, manganese:0.04, choline:3.4,  vitE:0.18, omega3:9   }},
-  { id: 'carrot',        name: 'Carrot',          emoji: '🥕',
-    per100g: { vitC:5.9,  vitA:835, vitB6:0.14, vitB12:0,    iron:0.3,  zinc:0.24,  potassium:320,  calcium:33,   iodine:2,   magnesium:12,  vitD:0,    folate:19,  vitK:13.2,  selenium:0.1,  copper:0.05, manganese:0.14, choline:8.8,  vitE:0.66, omega3:2   }},
-  { id: 'rice',          name: 'Rice',            emoji: '🍚',
-    per100g: { vitC:0,    vitA:0,   vitB6:0.08, vitB12:0,    iron:0.2,  zinc:0.49,  potassium:35,   calcium:10,   iodine:0,   magnesium:12,  vitD:0,    folate:3,   vitK:0,     selenium:7.5,  copper:0.07, manganese:0.47, choline:2.1,  vitE:0,    omega3:18  }},
-  { id: 'sweetpotato',   name: 'Sweet Potato',    emoji: '🍠',
-    per100g: { vitC:12.8, vitA:961, vitB6:0.3,  vitB12:0,    iron:0.74, zinc:0.32,  potassium:475,  calcium:38,   iodine:2,   magnesium:27,  vitD:0,    folate:6,   vitK:2.5,   selenium:0.6,  copper:0.16, manganese:0.26, choline:12.3, vitE:0.71, omega3:10  }},
-  { id: 'pecorino',      name: 'Pecorino',        emoji: '🧀',
-    per100g: { vitC:0,    vitA:150, vitB6:0.08, vitB12:1.5,  iron:0.5,  zinc:2.5,   potassium:90,   calcium:760,  iodine:30,  magnesium:20,  vitD:0.5,  folate:7,   vitK:2,     selenium:14,   copper:0.02, manganese:0.02, choline:15,   vitE:0.3,  omega3:130 }},
-  { id: 'parmesan',      name: 'Parmesan',        emoji: '🧀',
-    per100g: { vitC:0,    vitA:140, vitB6:0.09, vitB12:1.2,  iron:0.82, zinc:2.75,  potassium:92,   calcium:1184, iodine:30,  magnesium:44,  vitD:0.5,  folate:7,   vitK:1.7,   selenium:22,   copper:0.03, manganese:0.03, choline:15,   vitE:0.27, omega3:90  }},
-  { id: 'eggs',          name: 'Eggs',            emoji: '🥚',
-    per100g: { vitC:0,    vitA:149, vitB6:0.17, vitB12:1.11, iron:1.83, zinc:1.29,  potassium:138,  calcium:56,   iodine:53,  magnesium:12,  vitD:2.0,  folate:47,  vitK:0.3,   selenium:31.7, copper:0.13, manganese:0.04, choline:294,  vitE:1.03, omega3:100 }},
-  { id: 'driedapricot',  name: 'Dried Apricot',   emoji: '🍑',
-    per100g: { vitC:1,    vitA:180, vitB6:0.14, vitB12:0,    iron:2.66, zinc:0.39,  potassium:1160, calcium:55,   iodine:0,   magnesium:32,  vitD:0,    folate:13,  vitK:3.1,   selenium:2.2,  copper:0.34, manganese:0.24, choline:13.9, vitE:4.33, omega3:20  }},
-  { id: 'hazelnuts',     name: 'Hazelnuts',       emoji: '🌰',
-    per100g: { vitC:6.3,  vitA:1,   vitB6:0.56, vitB12:0,    iron:4.7,  zinc:2.45,  potassium:680,  calcium:114,  iodine:0,   magnesium:163, vitD:0,    folate:113, vitK:14.2,  selenium:2.4,  copper:1.73, manganese:6.17, choline:45.6, vitE:15,   omega3:87  }},
-  { id: 'brazilnut',     name: 'Brazil Nut',      emoji: '🌰',
-    per100g: { vitC:0.7,  vitA:0,   vitB6:0.1,  vitB12:0,    iron:2.43, zinc:4.06,  potassium:659,  calcium:160,  iodine:2,   magnesium:376, vitD:0,    folate:22,  vitK:0,     selenium:1917, copper:1.74, manganese:1.22, choline:28.8, vitE:5.73, omega3:18  }},
-  { id: 'almonds',       name: 'Almonds',         emoji: '🌰',
-    per100g: { vitC:0,    vitA:0,   vitB6:0.14, vitB12:0,    iron:3.71, zinc:3.12,  potassium:733,  calcium:264,  iodine:0,   magnesium:270, vitD:0,    folate:44,  vitK:0,     selenium:4.1,  copper:1.03, manganese:2.18, choline:52.1, vitE:25.6, omega3:0   }},
-  { id: 'grapefruit',    name: 'Grapefruit',      emoji: '🍊',
-    per100g: { vitC:38,   vitA:46,  vitB6:0.07, vitB12:0,    iron:0.08, zinc:0.07,  potassium:148,  calcium:22,   iodine:0,   magnesium:9,   vitD:0,    folate:10,  vitK:0,     selenium:0.1,  copper:0.06, manganese:0.02, choline:7.7,  vitE:0.13, omega3:7   }},
-  { id: 'kefir',         name: 'Kefir',           emoji: '🥛',
-    per100g: { vitC:0.5,  vitA:16,  vitB6:0.06, vitB12:0.5,  iron:0.05, zinc:0.38,  potassium:164,  calcium:120,  iodine:20,  magnesium:12,  vitD:0.1,  folate:5,   vitK:1,     selenium:2,    copper:0.01, manganese:0,    choline:16,   vitE:0.06, omega3:40  }},
-  { id: 'oliveoil',      name: 'Olive Oil',       emoji: '🫒',
-    per100g: { vitC:0,    vitA:0,   vitB6:0,    vitB12:0,    iron:0.56, zinc:0,     potassium:1,    calcium:1,    iodine:0,   magnesium:0,   vitD:0,    folate:0,   vitK:60,    selenium:0,    copper:0,    manganese:0,    choline:0.3,  vitE:14.35,omega3:760 }},
-  { id: 'sardines',      name: 'Sardines',        emoji: '🐟',
-    per100g: { vitC:0,    vitA:27,  vitB6:0.21, vitB12:8.9,  iron:2.92, zinc:1.31,  potassium:397,  calcium:382,  iodine:40,  magnesium:39,  vitD:4.8,  folate:10,  vitK:2.6,   selenium:52.7, copper:0.28, manganese:0.11, choline:75,   vitE:2,    omega3:2270}},
-  { id: 'salmon',        name: 'Salmon',          emoji: '🐠',
-    per100g: { vitC:0,    vitA:12,  vitB6:0.99, vitB12:3.18, iron:0.8,  zinc:0.64,  potassium:628,  calcium:14,   iodine:14,  magnesium:37,  vitD:13.1, folate:25,  vitK:0.5,   selenium:46.8, copper:0.29, manganese:0.02, choline:91,   vitE:3.55, omega3:2260}},
-  { id: 'spinach',       name: 'Spinach',         emoji: '🥬',
-    per100g: { vitC:28,   vitA:469, vitB6:0.2,  vitB12:0,    iron:2.71, zinc:0.53,  potassium:558,  calcium:99,   iodine:4,   magnesium:79,  vitD:0,    folate:194, vitK:483,   selenium:1,    copper:0.13, manganese:0.9,  choline:19.3, vitE:2.03, omega3:138 }},
-  { id: 'pumpkinseeds',  name: 'Pumpkin Seeds',   emoji: '🫘',
-    per100g: { vitC:1.9,  vitA:1,   vitB6:0.14, vitB12:0,    iron:8.07, zinc:7.64,  potassium:919,  calcium:46,   iodine:0,   magnesium:592, vitD:0,    folate:57,  vitK:7.3,   selenium:9.4,  copper:1.39, manganese:4.54, choline:63,   vitE:2.18, omega3:170 }},
-  { id: 'darkchocolate', name: 'Dark Chocolate',  emoji: '🍫',
-    per100g: { vitC:0,    vitA:2,   vitB6:0.06, vitB12:0,    iron:11.9, zinc:3.31,  potassium:715,  calcium:73,   iodine:0,   magnesium:228, vitD:0,    folate:13,  vitK:7.3,   selenium:6.8,  copper:1.77, manganese:1.95, choline:13.5, vitE:0.59, omega3:0   }},
-  { id: 'lentils',       name: 'Lentils',         emoji: '🫘',
-    per100g: { vitC:1.5,  vitA:1,   vitB6:0.18, vitB12:0,    iron:3.33, zinc:1.27,  potassium:369,  calcium:19,   iodine:0,   magnesium:36,  vitD:0,    folate:181, vitK:1.7,   selenium:2.8,  copper:0.25, manganese:0.49, choline:32.7, vitE:0.11, omega3:91  }},
-  { id: 'banana',        name: 'Banana',          emoji: '🍌',
-    per100g: { vitC:8.7,  vitA:3,   vitB6:0.37, vitB12:0,    iron:0.26, zinc:0.15,  potassium:358,  calcium:5,    iodine:0,   magnesium:27,  vitD:0,    folate:20,  vitK:0.5,   selenium:1,    copper:0.08, manganese:0.27, choline:9.8,  vitE:0.1,  omega3:27  }},
-  { id: 'beef',          name: 'Beef (lean)',      emoji: '🥩',
-    per100g: { vitC:0,    vitA:0,   vitB6:0.44, vitB12:2.5,  iron:2.6,  zinc:6.3,   potassium:318,  calcium:22,   iodine:4,   magnesium:24,  vitD:0.1,  folate:6,   vitK:1.5,   selenium:28.5, copper:0.12, manganese:0.02, choline:111,  vitE:0.18, omega3:40  }},
-  { id: 'mackerel',      name: 'Mackerel',        emoji: '🐟',
-    per100g: { vitC:0.4,  vitA:50,  vitB6:0.5,  vitB12:16.1, iron:1.63, zinc:0.94,  potassium:520,  calcium:11,   iodine:45,  magnesium:97,  vitD:16.1, folate:2,   vitK:5,     selenium:51.6, copper:0.11, manganese:0.02, choline:65,   vitE:1.99, omega3:3620}},
-  { id: 'tuna',          name: 'Tuna',            emoji: '🐠',
-    per100g: { vitC:0,    vitA:18,  vitB6:0.5,  vitB12:2.5,  iron:1.3,  zinc:0.77,  potassium:384,  calcium:11,   iodine:18,  magnesium:31,  vitD:2.3,  folate:4,   vitK:0,     selenium:90.6, copper:0.08, manganese:0.02, choline:65,   vitE:1.0,  omega3:280 }},
-  { id: 'oysters',       name: 'Oysters',         emoji: '🦪',
-    per100g: { vitC:5,    vitA:114, vitB6:0.05, vitB12:16.3, iron:5.59, zinc:39.3,  potassium:168,  calcium:45,   iodine:160, magnesium:22,  vitD:3.4,  folate:18,  vitK:0,     selenium:77,   copper:4.46, manganese:0.36, choline:65,   vitE:1.1,  omega3:440 }},
-  { id: 'broccoli',      name: 'Broccoli',        emoji: '🥦',
-    per100g: { vitC:89.2, vitA:31,  vitB6:0.17, vitB12:0,    iron:0.73, zinc:0.41,  potassium:316,  calcium:47,   iodine:10,  magnesium:21,  vitD:0,    folate:63,  vitK:101.6, selenium:2.5,  copper:0.05, manganese:0.21, choline:18.7, vitE:0.78, omega3:170 }},
-  { id: 'blueberries',   name: 'Blueberries',     emoji: '🫐',
-    per100g: { vitC:9.7,  vitA:3,   vitB6:0.05, vitB12:0,    iron:0.28, zinc:0.16,  potassium:77,   calcium:6,    iodine:0,   magnesium:6,   vitD:0,    folate:6,   vitK:19,    selenium:0.1,  copper:0.06, manganese:0.34, choline:6,    vitE:0.57, omega3:58  }},
-  { id: 'walnuts',       name: 'Walnuts',         emoji: '🌰',
-    per100g: { vitC:1.3,  vitA:1,   vitB6:0.54, vitB12:0,    iron:2.91, zinc:3.09,  potassium:441,  calcium:98,   iodine:0,   magnesium:158, vitD:0,    folate:98,  vitK:2.7,   selenium:4.9,  copper:1.59, manganese:3.41, choline:39.2, vitE:0.7,  omega3:9080}},
-  { id: 'sunflowerseeds',name: 'Sunflower Seeds', emoji: '🌻',
-    per100g: { vitC:1.4,  vitA:3,   vitB6:1.35, vitB12:0,    iron:5.25, zinc:5.0,   potassium:645,  calcium:78,   iodine:0,   magnesium:325, vitD:0,    folate:227, vitK:0,     selenium:79.3, copper:1.83, manganese:1.95, choline:55.1, vitE:35.17,omega3:91  }},
-  { id: 'greekyogurt',   name: 'Greek Yogurt',    emoji: '🥛',
-    per100g: { vitC:0,    vitA:27,  vitB6:0.07, vitB12:0.75, iron:0.08, zinc:0.52,  potassium:141,  calcium:110,  iodine:35,  magnesium:11,  vitD:0,    folate:7,   vitK:0,     selenium:9.7,  copper:0.01, manganese:0.01, choline:15.1, vitE:0.05, omega3:93  }},
-  { id: 'mushrooms',     name: 'Mushrooms',       emoji: '🍄',
-    per100g: { vitC:2.1,  vitA:0,   vitB6:0.11, vitB12:0,    iron:0.5,  zinc:0.52,  potassium:318,  calcium:3,    iodine:3,   magnesium:9,   vitD:0.2,  folate:17,  vitK:0,     selenium:9.3,  copper:0.32, manganese:0.05, choline:16.6, vitE:0.01, omega3:0   }},
-  { id: 'edamame',       name: 'Edamame',         emoji: '🫘',
-    per100g: { vitC:6.1,  vitA:4,   vitB6:0.1,  vitB12:0,    iron:2.27, zinc:1.37,  potassium:436,  calcium:63,   iodine:2,   magnesium:64,  vitD:0,    folate:311, vitK:26.7,  selenium:1.5,  copper:0.41, manganese:1.02, choline:56.7, vitE:0.68, omega3:0   }},
-  { id: 'beetroot',      name: 'Beetroot',        emoji: '🫀',
-    per100g: { vitC:3.6,  vitA:1,   vitB6:0.06, vitB12:0,    iron:0.79, zinc:0.35,  potassium:305,  calcium:16,   iodine:0,   magnesium:23,  vitD:0,    folate:80,  vitK:0.2,   selenium:0.7,  copper:0.08, manganese:0.33, choline:6.5,  vitE:0.04, omega3:0   }},
-  { id: 'cantaloupe',    name: 'Cantaloupe',      emoji: '🍈',
-    per100g: { vitC:36.7, vitA:169, vitB6:0.07, vitB12:0,    iron:0.21, zinc:0.18,  potassium:267,  calcium:9,    iodine:0,   magnesium:12,  vitD:0,    folate:21,  vitK:2.5,   selenium:0.4,  copper:0.04, manganese:0.04, choline:7.6,  vitE:0.05, omega3:34  }},
-  { id: 'serrano',       name: 'Serrano Ham',     emoji: '🍖',
-    per100g: { vitC:0,    vitA:0,   vitB6:0.5,  vitB12:1.0,  iron:1.7,  zinc:3.0,   potassium:490,  calcium:10,   iodine:3,   magnesium:25,  vitD:0.5,  folate:3,   vitK:0,     selenium:25,   copper:0.1,  manganese:0.02, choline:90,   vitE:0.5,  omega3:100 }},
-  { id: 'pear',          name: 'Pear',            emoji: '🍐',
-    per100g: { vitC:4.3,  vitA:1,   vitB6:0.03, vitB12:0,    iron:0.18, zinc:0.1,   potassium:116,  calcium:9,    iodine:0,   magnesium:7,   vitD:0,    folate:7,   vitK:4.4,   selenium:0.1,  copper:0.08, manganese:0.05, choline:5.1,  vitE:0.12, omega3:0   }},
-  { id: 'orangejuice',   name: 'Orange Juice',    emoji: '🍊',
-    per100g: { vitC:50,   vitA:3,   vitB6:0.06, vitB12:0,    iron:0.2,  zinc:0.05,  potassium:200,  calcium:11,   iodine:0,   magnesium:11,  vitD:0,    folate:30,  vitK:0.1,   selenium:0.1,  copper:0.04, manganese:0.02, choline:8.4,  vitE:0.04, omega3:13  }},
+  { id: 'almonds',       name: 'Almonds',           emoji: '🌰',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.14, vitB12:0,    iron:3.71, zinc:3.12,  potassium:733,  calcium:264,  iodine:0,   magnesium:270, vitD:0,    folate:44,  vitK:0,     selenium:4.1,  copper:1.03, manganese:2.18, choline:52.1, vitE:25.6,  omega3:0,    omega6:12300 }},
+  { id: 'apple',         name: 'Apple',             emoji: '🍎',
+    per100g: { vitC:4.6,  vitA:3,   vitB6:0.04, vitB12:0,    iron:0.12, zinc:0.04,  potassium:107,  calcium:6,    iodine:0,   magnesium:5,   vitD:0,    folate:3,   vitK:2.2,   selenium:0,    copper:0.03, manganese:0.04, choline:3.4,  vitE:0.18,  omega3:9,    omega6:78    }},
+  { id: 'avocado',       name: 'Avocado',           emoji: '🥑',
+    per100g: { vitC:10,   vitA:7,   vitB6:0.26, vitB12:0,    iron:0.55, zinc:0.64,  potassium:485,  calcium:12,   iodine:1,   magnesium:29,  vitD:0,    folate:81,  vitK:21,    selenium:0.4,  copper:0.19, manganese:0.14, choline:14.2, vitE:2.07,  omega3:110,  omega6:1690  }},
+  { id: 'banana',        name: 'Banana',            emoji: '🍌',
+    per100g: { vitC:8.7,  vitA:3,   vitB6:0.37, vitB12:0,    iron:0.26, zinc:0.15,  potassium:358,  calcium:5,    iodine:0,   magnesium:27,  vitD:0,    folate:20,  vitK:0.5,   selenium:1,    copper:0.08, manganese:0.27, choline:9.8,  vitE:0.1,   omega3:27,   omega6:46    }},
+  { id: 'beef',          name: 'Beef (lean)',        emoji: '🥩',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.44, vitB12:2.5,  iron:2.6,  zinc:6.3,   potassium:318,  calcium:22,   iodine:4,   magnesium:24,  vitD:0.1,  folate:6,   vitK:1.5,   selenium:28.5, copper:0.12, manganese:0.02, choline:111,  vitE:0.18,  omega3:40,   omega6:420   }},
+  { id: 'beetroot',      name: 'Beetroot',          emoji: '🫀',
+    per100g: { vitC:3.6,  vitA:1,   vitB6:0.06, vitB12:0,    iron:0.79, zinc:0.35,  potassium:305,  calcium:16,   iodine:0,   magnesium:23,  vitD:0,    folate:80,  vitK:0.2,   selenium:0.7,  copper:0.08, manganese:0.33, choline:6.5,  vitE:0.04,  omega3:0,    omega6:32    }},
+  { id: 'blueberries',   name: 'Blueberries',       emoji: '🫐',
+    per100g: { vitC:9.7,  vitA:3,   vitB6:0.05, vitB12:0,    iron:0.28, zinc:0.16,  potassium:77,   calcium:6,    iodine:0,   magnesium:6,   vitD:0,    folate:6,   vitK:19,    selenium:0.1,  copper:0.06, manganese:0.34, choline:6,    vitE:0.57,  omega3:58,   omega6:218   }},
+  { id: 'brazilnut',     name: 'Brazil Nut',        emoji: '🌰',
+    per100g: { vitC:0.7,  vitA:0,   vitB6:0.1,  vitB12:0,    iron:2.43, zinc:4.06,  potassium:659,  calcium:160,  iodine:2,   magnesium:376, vitD:0,    folate:22,  vitK:0,     selenium:1917, copper:1.74, manganese:1.22, choline:28.8, vitE:5.73,  omega3:18,   omega6:6400  }},
+  { id: 'broccoli',      name: 'Broccoli',          emoji: '🥦',
+    per100g: { vitC:89.2, vitA:31,  vitB6:0.17, vitB12:0,    iron:0.73, zinc:0.41,  potassium:316,  calcium:47,   iodine:10,  magnesium:21,  vitD:0,    folate:63,  vitK:101.6, selenium:2.5,  copper:0.05, manganese:0.21, choline:18.7, vitE:0.78,  omega3:170,  omega6:40    }},
+  { id: 'cantaloupe',    name: 'Cantaloupe',        emoji: '🍈',
+    per100g: { vitC:36.7, vitA:169, vitB6:0.07, vitB12:0,    iron:0.21, zinc:0.18,  potassium:267,  calcium:9,    iodine:0,   magnesium:12,  vitD:0,    folate:21,  vitK:2.5,   selenium:0.4,  copper:0.04, manganese:0.04, choline:7.6,  vitE:0.05,  omega3:34,   omega6:42    }},
+  { id: 'carrot',        name: 'Carrot',            emoji: '🥕',
+    per100g: { vitC:5.9,  vitA:835, vitB6:0.14, vitB12:0,    iron:0.3,  zinc:0.24,  potassium:320,  calcium:33,   iodine:2,   magnesium:12,  vitD:0,    folate:19,  vitK:13.2,  selenium:0.1,  copper:0.05, manganese:0.14, choline:8.8,  vitE:0.66,  omega3:2,    omega6:115   }},
+  { id: 'chicken',       name: 'Chicken',           emoji: '🍗',
+    per100g: { vitC:0,    vitA:9,   vitB6:0.9,  vitB12:0.3,  iron:1.0,  zinc:1.8,   potassium:340,  calcium:15,   iodine:6,   magnesium:29,  vitD:0.1,  folate:4,   vitK:0,     selenium:27,   copper:0.07, manganese:0.02, choline:85,   vitE:0.3,   omega3:50,   omega6:2110  }},
+  { id: 'cilantro',      name: 'Cilantro',          emoji: '🌿',
+    per100g: { vitC:27,   vitA:337, vitB6:0.15, vitB12:0,    iron:1.77, zinc:0.5,   potassium:521,  calcium:67,   iodine:0,   magnesium:26,  vitD:0,    folate:62,  vitK:310,   selenium:0.9,  copper:0.22, manganese:0.43, choline:12.8, vitE:2.5,   omega3:34,   omega6:52    }},
+  { id: 'darkchocolate', name: 'Dark Chocolate',    emoji: '🍫',
+    per100g: { vitC:0,    vitA:2,   vitB6:0.06, vitB12:0,    iron:11.9, zinc:3.31,  potassium:715,  calcium:73,   iodine:0,   magnesium:228, vitD:0,    folate:13,  vitK:7.3,   selenium:6.8,  copper:1.77, manganese:1.95, choline:13.5, vitE:0.59,  omega3:0,    omega6:1150  }},
+  { id: 'driedapricot',  name: 'Dried Apricot',     emoji: '🍑',
+    per100g: { vitC:1,    vitA:180, vitB6:0.14, vitB12:0,    iron:2.66, zinc:0.39,  potassium:1160, calcium:55,   iodine:0,   magnesium:32,  vitD:0,    folate:13,  vitK:3.1,   selenium:2.2,  copper:0.34, manganese:0.24, choline:13.9, vitE:4.33,  omega3:20,   omega6:360   }},
+  { id: 'edamame',       name: 'Edamame',           emoji: '🫘',
+    per100g: { vitC:6.1,  vitA:4,   vitB6:0.1,  vitB12:0,    iron:2.27, zinc:1.37,  potassium:436,  calcium:63,   iodine:2,   magnesium:64,  vitD:0,    folate:311, vitK:26.7,  selenium:1.5,  copper:0.41, manganese:1.02, choline:56.7, vitE:0.68,  omega3:0,    omega6:3390  }},
+  { id: 'eggs',          name: 'Eggs',              emoji: '🥚',
+    per100g: { vitC:0,    vitA:149, vitB6:0.17, vitB12:1.11, iron:1.83, zinc:1.29,  potassium:138,  calcium:56,   iodine:53,  magnesium:12,  vitD:2.0,  folate:47,  vitK:0.3,   selenium:31.7, copper:0.13, manganese:0.04, choline:294,  vitE:1.03,  omega3:100,  omega6:1300  }},
+  { id: 'grapefruit',    name: 'Grapefruit',        emoji: '🍊',
+    per100g: { vitC:38,   vitA:46,  vitB6:0.07, vitB12:0,    iron:0.08, zinc:0.07,  potassium:148,  calcium:22,   iodine:0,   magnesium:9,   vitD:0,    folate:10,  vitK:0,     selenium:0.1,  copper:0.06, manganese:0.02, choline:7.7,  vitE:0.13,  omega3:7,    omega6:56    }},
+  { id: 'greekyogurt',   name: 'Greek Yogurt',      emoji: '🥛',
+    per100g: { vitC:0,    vitA:27,  vitB6:0.07, vitB12:0.75, iron:0.08, zinc:0.52,  potassium:141,  calcium:110,  iodine:35,  magnesium:11,  vitD:0,    folate:7,   vitK:0,     selenium:9.7,  copper:0.01, manganese:0.01, choline:15.1, vitE:0.05,  omega3:93,   omega6:120   }},
+  { id: 'hazelnuts',     name: 'Hazelnuts',         emoji: '🌰',
+    per100g: { vitC:6.3,  vitA:1,   vitB6:0.56, vitB12:0,    iron:4.7,  zinc:2.45,  potassium:680,  calcium:114,  iodine:0,   magnesium:163, vitD:0,    folate:113, vitK:14.2,  selenium:2.4,  copper:1.73, manganese:6.17, choline:45.6, vitE:15,    omega3:87,   omega6:7920  }},
+  { id: 'honey',         name: 'Honey',             emoji: '🍯',
+    per100g: { vitC:0.5,  vitA:0,   vitB6:0.02, vitB12:0,    iron:0.42, zinc:0.22,  potassium:52,   calcium:6,    iodine:0,   magnesium:2,   vitD:0,    folate:2,   vitK:0,     selenium:0.8,  copper:0.04, manganese:0.08, choline:2.2,  vitE:0,     omega3:0,    omega6:0     }},
+  { id: 'kefir',         name: 'Kefir',             emoji: '🥛',
+    per100g: { vitC:0.5,  vitA:16,  vitB6:0.06, vitB12:0.5,  iron:0.05, zinc:0.38,  potassium:164,  calcium:120,  iodine:20,  magnesium:12,  vitD:0.1,  folate:5,   vitK:1,     selenium:2,    copper:0.01, manganese:0,    choline:16,   vitE:0.06,  omega3:40,   omega6:150   }},
+  { id: 'kiwi',          name: 'Kiwi',              emoji: '🥝',
+    per100g: { vitC:93,   vitA:4,   vitB6:0.06, vitB12:0,    iron:0.31, zinc:0.14,  potassium:312,  calcium:34,   iodine:0,   magnesium:17,  vitD:0,    folate:25,  vitK:40,    selenium:0.2,  copper:0.13, manganese:0.1,  choline:7.8,  vitE:1.5,   omega3:40,   omega6:252   }},
+  { id: 'lentils',       name: 'Lentils',           emoji: '🫘',
+    per100g: { vitC:1.5,  vitA:1,   vitB6:0.18, vitB12:0,    iron:3.33, zinc:1.27,  potassium:369,  calcium:19,   iodine:0,   magnesium:36,  vitD:0,    folate:181, vitK:1.7,   selenium:2.8,  copper:0.25, manganese:0.49, choline:32.7, vitE:0.11,  omega3:91,   omega6:334   }},
+  { id: 'mackerel',      name: 'Mackerel',          emoji: '🐟',
+    per100g: { vitC:0.4,  vitA:50,  vitB6:0.5,  vitB12:16.1, iron:1.63, zinc:0.94,  potassium:520,  calcium:11,   iodine:45,  magnesium:97,  vitD:16.1, folate:2,   vitK:5,     selenium:51.6, copper:0.11, manganese:0.02, choline:65,   vitE:1.99,  omega3:3620, omega6:1570  }},
+  { id: 'mango',         name: 'Mango',             emoji: '🥭',
+    per100g: { vitC:36,   vitA:54,  vitB6:0.12, vitB12:0,    iron:0.16, zinc:0.09,  potassium:168,  calcium:11,   iodine:0,   magnesium:10,  vitD:0,    folate:43,  vitK:4.2,   selenium:0.6,  copper:0.11, manganese:0.06, choline:7.6,  vitE:0.9,   omega3:7,    omega6:15    }},
+  { id: 'milk',          name: 'Milk',              emoji: '🥛',
+    per100g: { vitC:0,    vitA:46,  vitB6:0.04, vitB12:0.44, iron:0.03, zinc:0.38,  potassium:150,  calcium:125,  iodine:43,  magnesium:11,  vitD:0.1,  folate:5,   vitK:0.3,   selenium:3.7,  copper:0.01, manganese:0,    choline:16.4, vitE:0.07,  omega3:75,   omega6:167   }},
+  { id: 'mushrooms',     name: 'Mushrooms',         emoji: '🍄',
+    per100g: { vitC:2.1,  vitA:0,   vitB6:0.11, vitB12:0,    iron:0.5,  zinc:0.52,  potassium:318,  calcium:3,    iodine:3,   magnesium:9,   vitD:0.2,  folate:17,  vitK:0,     selenium:9.3,  copper:0.32, manganese:0.05, choline:16.6, vitE:0.01,  omega3:0,    omega6:3     }},
+  { id: 'oats',          name: 'Oats',              emoji: '🌾',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.1,  vitB12:0,    iron:4.72, zinc:3.97,  potassium:429,  calcium:54,   iodine:3,   magnesium:177, vitD:0,    folate:56,  vitK:2,     selenium:28.9, copper:0.63, manganese:4.92, choline:40.4, vitE:0.42,  omega3:111,  omega6:2530  }},
+  { id: 'oliveoil',      name: 'Olive Oil',         emoji: '🫒',
+    per100g: { vitC:0,    vitA:0,   vitB6:0,    vitB12:0,    iron:0.56, zinc:0,     potassium:1,    calcium:1,    iodine:0,   magnesium:0,   vitD:0,    folate:0,   vitK:60,    selenium:0,    copper:0,    manganese:0,    choline:0.3,  vitE:14.35, omega3:760,  omega6:9764  }},
+  { id: 'orangejuice',   name: 'Orange Juice',      emoji: '🍊',
+    per100g: { vitC:50,   vitA:3,   vitB6:0.06, vitB12:0,    iron:0.2,  zinc:0.05,  potassium:200,  calcium:11,   iodine:0,   magnesium:11,  vitD:0,    folate:30,  vitK:0.1,   selenium:0.1,  copper:0.04, manganese:0.02, choline:8.4,  vitE:0.04,  omega3:13,   omega6:60    }},
+  { id: 'oysters',       name: 'Oysters',           emoji: '🦪',
+    per100g: { vitC:5,    vitA:114, vitB6:0.05, vitB12:16.3, iron:5.59, zinc:39.3,  potassium:168,  calcium:45,   iodine:160, magnesium:22,  vitD:3.4,  folate:18,  vitK:0,     selenium:77,   copper:4.46, manganese:0.36, choline:65,   vitE:1.1,   omega3:440,  omega6:48    }},
+  { id: 'palermo',       name: 'Palermo Paprika',   emoji: '🫑',
+    per100g: { vitC:120,  vitA:157, vitB6:0.3,  vitB12:0,    iron:0.43, zinc:0.25,  potassium:211,  calcium:10,   iodine:0,   magnesium:12,  vitD:0,    folate:46,  vitK:4.9,   selenium:0.3,  copper:0.12, manganese:0.16, choline:5.6,  vitE:3.1,   omega3:17,   omega6:46    }},
+  { id: 'parmesan',      name: 'Parmesan',          emoji: '🧀',
+    per100g: { vitC:0,    vitA:140, vitB6:0.09, vitB12:1.2,  iron:0.82, zinc:2.75,  potassium:92,   calcium:1184, iodine:30,  magnesium:44,  vitD:0.5,  folate:7,   vitK:1.7,   selenium:22,   copper:0.03, manganese:0.03, choline:15,   vitE:0.27,  omega3:90,   omega6:660   }},
+  { id: 'pear',          name: 'Pear',              emoji: '🍐',
+    per100g: { vitC:4.3,  vitA:1,   vitB6:0.03, vitB12:0,    iron:0.18, zinc:0.1,   potassium:116,  calcium:9,    iodine:0,   magnesium:7,   vitD:0,    folate:7,   vitK:4.4,   selenium:0.1,  copper:0.08, manganese:0.05, choline:5.1,  vitE:0.12,  omega3:0,    omega6:37    }},
+  { id: 'pecorino',      name: 'Pecorino',          emoji: '🧀',
+    per100g: { vitC:0,    vitA:150, vitB6:0.08, vitB12:1.5,  iron:0.5,  zinc:2.5,   potassium:90,   calcium:760,  iodine:30,  magnesium:20,  vitD:0.5,  folate:7,   vitK:2,     selenium:14,   copper:0.02, manganese:0.02, choline:15,   vitE:0.3,   omega3:130,  omega6:830   }},
+  { id: 'pumpkinseeds',  name: 'Pumpkin Seeds',     emoji: '🫘',
+    per100g: { vitC:1.9,  vitA:1,   vitB6:0.14, vitB12:0,    iron:8.07, zinc:7.64,  potassium:919,  calcium:46,   iodine:0,   magnesium:592, vitD:0,    folate:57,  vitK:7.3,   selenium:9.4,  copper:1.39, manganese:4.54, choline:63,   vitE:2.18,  omega3:170,  omega6:20710 }},
+  { id: 'raspberries',   name: 'Raspberries',       emoji: '🍓',
+    per100g: { vitC:26,   vitA:2,   vitB6:0.06, vitB12:0,    iron:0.69, zinc:0.42,  potassium:151,  calcium:25,   iodine:0,   magnesium:22,  vitD:0,    folate:21,  vitK:7.8,   selenium:0.2,  copper:0.09, manganese:0.67, choline:12.3, vitE:0.87,  omega3:126,  omega6:250   }},
+  { id: 'rice',          name: 'Rice',              emoji: '🍚',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.08, vitB12:0,    iron:0.2,  zinc:0.49,  potassium:35,   calcium:10,   iodine:0,   magnesium:12,  vitD:0,    folate:3,   vitK:0,     selenium:7.5,  copper:0.07, manganese:0.47, choline:2.1,  vitE:0,     omega3:18,   omega6:300   }},
   { id: 'smoked_beef',   name: 'Runder Rook Vlees', emoji: '🥩',
-    per100g: { vitC:0,    vitA:0,   vitB6:0.4,  vitB12:2.5,  iron:2.5,  zinc:5.5,   potassium:300,  calcium:15,   iodine:4,   magnesium:22,  vitD:0.1,  folate:5,   vitK:1.5,   selenium:25,   copper:0.1,  manganese:0.02, choline:100,  vitE:0.2,  omega3:30  }},
-  { id: 'whitebeans',    name: 'White Beans',     emoji: '🫘',
-    per100g: { vitC:0,    vitA:0,   vitB6:0.14, vitB12:0,    iron:3.7,  zinc:1.0,   potassium:561,  calcium:90,   iodine:0,   magnesium:63,  vitD:0,    folate:130, vitK:6,     selenium:1.5,  copper:0.35, manganese:0.53, choline:55,   vitE:0.1,  omega3:60  }},
-  { id: 'cilantro',      name: 'Cilantro',        emoji: '🌿',
-    per100g: { vitC:27,   vitA:337, vitB6:0.15, vitB12:0,    iron:1.77, zinc:0.5,   potassium:521,  calcium:67,   iodine:0,   magnesium:26,  vitD:0,    folate:62,  vitK:310,   selenium:0.9,  copper:0.22, manganese:0.43, choline:12.8, vitE:2.5,  omega3:34  }},
-  { id: 'palermo',       name: 'Palermo Paprika', emoji: '🫑',
-    per100g: { vitC:120,  vitA:157, vitB6:0.3,  vitB12:0,    iron:0.43, zinc:0.25,  potassium:211,  calcium:10,   iodine:0,   magnesium:12,  vitD:0,    folate:46,  vitK:4.9,   selenium:0.3,  copper:0.12, manganese:0.16, choline:5.6,  vitE:3.1,  omega3:17  }},
+    per100g: { vitC:0,    vitA:0,   vitB6:0.4,  vitB12:2.5,  iron:2.5,  zinc:5.5,   potassium:300,  calcium:15,   iodine:4,   magnesium:22,  vitD:0.1,  folate:5,   vitK:1.5,   selenium:25,   copper:0.1,  manganese:0.02, choline:100,  vitE:0.2,   omega3:30,   omega6:360   }},
+  { id: 'salmon',        name: 'Salmon',            emoji: '🐠',
+    per100g: { vitC:0,    vitA:12,  vitB6:0.99, vitB12:3.18, iron:0.8,  zinc:0.64,  potassium:628,  calcium:14,   iodine:14,  magnesium:37,  vitD:13.1, folate:25,  vitK:0.5,   selenium:46.8, copper:0.29, manganese:0.02, choline:91,   vitE:3.55,  omega3:2260, omega6:1024  }},
+  { id: 'sardines',      name: 'Sardines',          emoji: '🐟',
+    per100g: { vitC:0,    vitA:27,  vitB6:0.21, vitB12:8.9,  iron:2.92, zinc:1.31,  potassium:397,  calcium:382,  iodine:40,  magnesium:39,  vitD:4.8,  folate:10,  vitK:2.6,   selenium:52.7, copper:0.28, manganese:0.11, choline:75,   vitE:2,     omega3:2270, omega6:508   }},
+  { id: 'serrano',       name: 'Serrano Ham',       emoji: '🍖',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.5,  vitB12:1.0,  iron:1.7,  zinc:3.0,   potassium:490,  calcium:10,   iodine:3,   magnesium:25,  vitD:0.5,  folate:3,   vitK:0,     selenium:25,   copper:0.1,  manganese:0.02, choline:90,   vitE:0.5,   omega3:100,  omega6:1100  }},
+  { id: 'sourdough',     name: 'Sourdough Bread',   emoji: '🍞',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.1,  vitB12:0,    iron:2.5,  zinc:0.7,   potassium:145,  calcium:54,   iodine:1,   magnesium:22,  vitD:0,    folate:37,  vitK:1.9,   selenium:20,   copper:0.13, manganese:0.8,  choline:14.6, vitE:0.2,   omega3:100,  omega6:1200  }},
+  { id: 'spinach',       name: 'Spinach',           emoji: '🥬',
+    per100g: { vitC:28,   vitA:469, vitB6:0.2,  vitB12:0,    iron:2.71, zinc:0.53,  potassium:558,  calcium:99,   iodine:4,   magnesium:79,  vitD:0,    folate:194, vitK:483,   selenium:1,    copper:0.13, manganese:0.9,  choline:19.3, vitE:2.03,  omega3:138,  omega6:26    }},
+  { id: 'sunflowerseeds',name: 'Sunflower Seeds',   emoji: '🌻',
+    per100g: { vitC:1.4,  vitA:3,   vitB6:1.35, vitB12:0,    iron:5.25, zinc:5.0,   potassium:645,  calcium:78,   iodine:0,   magnesium:325, vitD:0,    folate:227, vitK:0,     selenium:79.3, copper:1.83, manganese:1.95, choline:55.1, vitE:35.17, omega3:91,   omega6:39480 }},
+  { id: 'sweetpotato',   name: 'Sweet Potato',      emoji: '🍠',
+    per100g: { vitC:12.8, vitA:961, vitB6:0.3,  vitB12:0,    iron:0.74, zinc:0.32,  potassium:475,  calcium:38,   iodine:2,   magnesium:27,  vitD:0,    folate:6,   vitK:2.5,   selenium:0.6,  copper:0.16, manganese:0.26, choline:12.3, vitE:0.71,  omega3:10,   omega6:16    }},
+  { id: 'tuna',          name: 'Tuna',              emoji: '🐠',
+    per100g: { vitC:0,    vitA:18,  vitB6:0.5,  vitB12:2.5,  iron:1.3,  zinc:0.77,  potassium:384,  calcium:11,   iodine:18,  magnesium:31,  vitD:2.3,  folate:4,   vitK:0,     selenium:90.6, copper:0.08, manganese:0.02, choline:65,   vitE:1.0,   omega3:280,  omega6:204   }},
+  { id: 'walnuts',       name: 'Walnuts',           emoji: '🌰',
+    per100g: { vitC:1.3,  vitA:1,   vitB6:0.54, vitB12:0,    iron:2.91, zinc:3.09,  potassium:441,  calcium:98,   iodine:0,   magnesium:158, vitD:0,    folate:98,  vitK:2.7,   selenium:4.9,  copper:1.59, manganese:3.41, choline:39.2, vitE:0.7,   omega3:9080, omega6:38093 }},
+  { id: 'whitebeans',    name: 'White Beans',       emoji: '🫘',
+    per100g: { vitC:0,    vitA:0,   vitB6:0.14, vitB12:0,    iron:3.7,  zinc:1.0,   potassium:561,  calcium:90,   iodine:0,   magnesium:63,  vitD:0,    folate:130, vitK:6,     selenium:1.5,  copper:0.35, manganese:0.53, choline:55,   vitE:0.1,   omega3:60,   omega6:280   }},
 ];
 
 const SUPPLEMENTS = [
-  { id: 'supp_vitD',   name: 'Vitamin D 50µg',        emoji: '💊', serving: '1 capsule',
-    amounts: { vitD: 50 } },
-  { id: 'supp_moller', name: 'Möller Omega-3',         emoji: '🐟', serving: '1 tbsp (10ml)',
+  { id: 'supp_vitD',   name: 'D3+K2 (50µg D3 / 200µg K2)', emoji: '💊', serving: '1 capsule',
+    amounts: { vitD: 50, vitK: 200 } },
+  { id: 'supp_moller', name: 'Möller Omega-3',               emoji: '🐟', serving: '1 tbsp (10ml)',
     amounts: { omega3: 1110, vitD: 10, vitA: 250, vitE: 3 } },
-  { id: 'supp_mag',    name: 'Magnesium Bisglycinate', emoji: '💊', serving: '1 capsule',
-    amounts: { magnesium: 150 } },
-  { id: 'supp_zinc',   name: 'Zinc 15mg',              emoji: '💊', serving: '1 capsule',
+  { id: 'supp_mag',    name: 'Magnesium Bisglycinate',       emoji: '💊', serving: '1 capsule',
+    amounts: { magnesium: 100, vitB6: 1 } },
+  { id: 'supp_zinc',   name: 'Zinc 15mg',                    emoji: '💊', serving: '1 capsule',
     amounts: { zinc: 15 } },
 ];
 
@@ -297,10 +309,12 @@ const MICRONUTRIENTS = [
     desc: 'Bone formation, antioxidant defence, carbohydrate and amino acid metabolism.' },
   { id: 'choline',   name: 'Choline',     cat: 'weekly', sauna: false, rda: 550,  unit: 'mg',
     desc: 'Liver function, brain health, cell membrane integrity. Eggs are your primary source.' },
-  { id: 'vitE',      name: 'Vitamin E',   cat: 'weekly', sauna: true,  rda: 15,   unit: 'mg',
+  { id: 'vitE',      name: 'Vitamin E',   cat: 'weekly', sauna: true,  rda: 15,    unit: 'mg',
     desc: 'Fat-soluble antioxidant protecting cell membranes. Reduces oxidative stress post-sauna.' },
-  { id: 'omega3',    name: 'Omega-3',     cat: 'weekly', sauna: true,  rda: 1600, unit: 'mg',
+  { id: 'omega3',    name: 'Omega-3',     cat: 'weekly', sauna: true,  rda: 1600,  unit: 'mg',
     desc: 'Anti-inflammatory, cardiovascular health, brain function. Reduces inflammation after sauna.' },
+  { id: 'omega6',    name: 'Omega-6',     cat: 'daily',  sauna: false, rda: 14000, unit: 'mg',
+    desc: 'Essential fatty acid for growth and immune function. Key metric is the Ω-6:Ω-3 ratio — aim for ≤4:1. Western diets often run 15–20:1.' },
 ];
 
 // Estimated nutrient losses / increased demand per sauna session
@@ -1868,7 +1882,8 @@ function renderNutrientGrid(dayLogs) {
 
   const title = view === 'sauna' ? 'Sauna Recovery' : view === 'weekly' ? 'This Week' : 'Today';
   const gridHtml = `<div class="card"><div class="card-header"><h3>${title}</h3></div><div class="nutrient-grid">${cards}</div></div>`;
-  return view === 'weekly' ? gridHtml + renderWeekDayLog() : gridHtml;
+  if (view === 'weekly') return gridHtml + renderWeekDayLog();
+  return gridHtml + renderOmegaRatioCard(dayLogs);
 }
 
 function getTopContributors(nutrientId, logs, maxCount = 4) {
@@ -1888,14 +1903,44 @@ function getTopContributors(nutrientId, logs, maxCount = 4) {
       byFood.set(l.food, { emoji, total: cur.total + contrib });
     }
   });
+  const grandTotal = [...byFood.values()].reduce((s, x) => s + x.total, 0);
   return [...byFood.values()]
     .sort((a, b) => b.total - a.total)
     .slice(0, maxCount)
-    .map(x => x.emoji);
+    .map(x => {
+      const pct = grandTotal > 0 ? Math.round((x.total / grandTotal) * 100) : 0;
+      return `<span class="contrib-item">${x.emoji}<small>${pct}%</small></span>`;
+    });
+}
+
+function renderOmegaRatioCard(dayLogs) {
+  const amts = getTotalNutrientAmounts(dayLogs);
+  const o3 = amts.omega3 || 0;
+  const o6 = amts.omega6 || 0;
+  if (o3 === 0 && o6 === 0) return '';
+  const ratioNum = o3 > 0 ? o6 / o3 : Infinity;
+  const ratioStr = o3 > 0 ? ratioNum.toFixed(1) : '∞';
+  const q = ratioNum <= 4 ? { label: 'Optimal', color: 'var(--micros)' }
+          : ratioNum <= 8 ? { label: 'Moderate', color: 'var(--warning)' }
+          :                 { label: 'High Ω-6', color: 'var(--danger)' };
+  return `
+    <div class="card omega-ratio-card">
+      <div class="omega-ratio-header">
+        <span class="omega-ratio-title">⚖️ Omega Balance</span>
+        <span class="omega-ratio-badge" style="color:${q.color}">${q.label}</span>
+      </div>
+      <div class="omega-ratio-row">
+        <div class="omega-item"><span class="omega-label">Ω-3</span><span class="omega-val">${formatNutrientAmt(o3,'mg')}</span></div>
+        <div class="omega-sep">vs</div>
+        <div class="omega-item"><span class="omega-label">Ω-6</span><span class="omega-val">${formatNutrientAmt(o6,'mg')}</span></div>
+        <div class="omega-ratio-num" style="color:${q.color}">1 : ${ratioStr}</div>
+      </div>
+      <div class="omega-ratio-note">Ω-6 : Ω-3 ratio · target ≤ 4 : 1</div>
+    </div>`;
 }
 
 function shortNutrientName(n) {
-  return n.name.replace('Vitamin ', 'Vit ').replace(' (B9)', '').replace('Omega-3', 'Ω-3');
+  return n.name.replace('Vitamin ', 'Vit ').replace(' (B9)', '').replace('Omega-3', 'Ω-3').replace('Omega-6', 'Ω-6');
 }
 
 function renderWeekDayLog() {
@@ -2031,12 +2076,18 @@ function renderFoodSourcesTable() {
     const foodSources = FOODS
       .filter(f => (f.per100g[n.id] || 0) > 0)
       .sort((a, b) => b.per100g[n.id] - a.per100g[n.id])
-      .slice(0, 5)
-      .map(f => `<span class="src-item">${f.emoji} ${f.name} <em>${formatNutrientAmt(f.per100g[n.id], n.unit)}/100g</em></span>`);
+      .slice(0, 8)
+      .map(f => {
+        const pctRda = n.rda > 0 ? Math.round((f.per100g[n.id] / n.rda) * 100) : 0;
+        return `<span class="src-item">${f.emoji} ${f.name} <em>${formatNutrientAmt(f.per100g[n.id], n.unit)}/100g</em><em class="src-pct">${pctRda}% RDA</em></span>`;
+      });
 
     const suppSources = SUPPLEMENTS
       .filter(s => s.amounts && (s.amounts[n.id] || 0) > 0)
-      .map(s => `<span class="src-item src-item-supp">${s.emoji} ${s.name} <em>${formatNutrientAmt(s.amounts[n.id], n.unit)}/serving</em></span>`);
+      .map(s => {
+        const pctRda = n.rda > 0 ? Math.round((s.amounts[n.id] / n.rda) * 100) : 0;
+        return `<span class="src-item src-item-supp">${s.emoji} ${s.name} <em>${formatNutrientAmt(s.amounts[n.id], n.unit)}/serving</em><em class="src-pct">${pctRda}% RDA</em></span>`;
+      });
 
     return `
       <div class="src-row">

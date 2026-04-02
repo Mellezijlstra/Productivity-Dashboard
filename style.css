@@ -926,7 +926,9 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   padding: 0 0 0 4px;
   flex-shrink: 0;
 }
-.nutrient-sources { font-size: 0.85rem; margin-top: 4px; letter-spacing: 0.05em; }
+.nutrient-sources { font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+.contrib-item { display: inline-flex; align-items: center; gap: 2px; }
+.contrib-item small { font-size: 0.65rem; color: var(--text-muted); line-height: 1; }
 .nutrient-desc {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -1106,7 +1108,21 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
   color: var(--text-dim);
 }
 .src-item em { color: var(--text-muted); font-style: normal; }
+.src-pct { color: var(--micros) !important; margin-left: 2px; }
 .src-item-supp { border-color: var(--ai); background: var(--ai-dim); }
+
+/* Omega balance card */
+.omega-ratio-card { margin-top: 0; }
+.omega-ratio-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.omega-ratio-title { font-size: 0.9rem; font-weight: 600; }
+.omega-ratio-badge { font-size: 0.75rem; font-weight: 600; }
+.omega-ratio-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.omega-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.omega-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+.omega-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.omega-sep { font-size: 0.75rem; color: var(--text-muted); }
+.omega-ratio-num { font-size: 1.1rem; font-weight: 700; margin-left: auto; }
+.omega-ratio-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; }
 
 /* Protocol cards */
 .sauna-protocols-grid {

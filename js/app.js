@@ -930,7 +930,7 @@ function renderFitnessStats() {
     : '';
   document.getElementById('current-weight').innerHTML = (weekAvg ? weekAvg + ' kg' : latest ? latest.weight + ' kg' : '—') + wowHtml;
 
-  const { tdee, confidence, dataPoints } = calculateAdaptiveTDEE();
+  const { tdee, confidence } = calculateAdaptiveTDEE();
   if (tdee) {
     document.getElementById('tdee-display').textContent = tdee + ' kcal';
     const badge = document.getElementById('confidence-badge');
@@ -1902,7 +1902,7 @@ function getBioavailWarning(nutrientId, logs) {
     grandTotal += contrib;
     if (food.lowBioavail && food.lowBioavail.includes(nutrientId)) lowTotal += contrib;
   });
-  if (grandTotal === 0 || lowTotal / grandTotal < 0.6) return '';
+  if (grandTotal === 0 || lowTotal / grandTotal < 0.4) return '';
   const reason = nutrientId === 'iron' ? 'non-heme iron absorbs ~10% vs ~25% from meat'
                : nutrientId === 'calcium' ? 'oxalates in these foods block calcium uptake'
                : 'phytates in nuts/seeds/legumes reduce absorption';

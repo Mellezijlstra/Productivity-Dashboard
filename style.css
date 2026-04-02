@@ -1122,7 +1122,9 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .omega-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
 .omega-sep { font-size: 0.75rem; color: var(--text-muted); }
 .omega-ratio-num { font-size: 1.1rem; font-weight: 700; margin-left: auto; }
-.omega-ratio-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; }
+.omega-raw { font-size: 0.68rem; color: var(--text-muted); }
+.omega-ala-note { font-size: 0.7rem; color: var(--warning); margin-top: 8px; }
+.omega-ratio-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
 
 /* Protocol cards */
 .sauna-protocols-grid {

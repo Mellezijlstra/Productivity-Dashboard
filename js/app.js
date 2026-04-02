@@ -1913,20 +1913,44 @@ function getTopContributors(nutrientId, logs, maxCount = 4) {
     });
 }
 
+// EPA/DHA sources are fully bioavailable; everything else is plant ALA (~8% converts to active EPA/DHA)
+const EPA_DHA_SOURCES = new Set(['salmon', 'sardines', 'mackerel', 'tuna', 'oysters', 'eggs', 'supp_moller']);
+const ALA_CONVERSION = 0.08;
+
+function getEffectiveOmega3(logs) {
+  let total = 0;
+  logs.forEach(l => {
+    const grams = parseFloat(l.grams || 100);
+    let raw = 0;
+    if (l.food.startsWith('supp_')) {
+      const supp = SUPPLEMENTS.find(s => s.id === l.food);
+      raw = (supp?.amounts?.omega3 || 0) * grams;
+    } else {
+      const food = FOODS.find(f => f.id === l.food);
+      raw = (food?.per100g?.omega3 || 0) * (grams / 100);
+    }
+    total += raw * (EPA_DHA_SOURCES.has(l.food) ? 1.0 : ALA_CONVERSION);
+  });
+  return total;
+}
+
 function renderOmegaRatioCard(dayLogs) {
   const amts = getTotalNutrientAmounts(dayLogs);
-  const o3 = amts.omega3 || 0;
+  const o3Raw = amts.omega3 || 0;
+  const o3Eff = getEffectiveOmega3(dayLogs);
   const o6 = amts.omega6 || 0;
-  if (o3 === 0 && o6 === 0) return '';
-  const ratioNum = o3 > 0 ? o6 / o3 : Infinity;
-  const ratioStr = o3 > 0 ? ratioNum.toFixed(1) : '∞';
+  if (o3Raw === 0 && o6 === 0) return '';
+  const ratioNum = o3Eff > 0 ? o6 / o3Eff : Infinity;
+  const ratioStr = o3Eff > 0 ? ratioNum.toFixed(1) : '∞';
   const q = ratioNum <= 4 ? { label: 'Optimal', color: 'var(--micros)' }
           : ratioNum <= 8 ? { label: 'Moderate', color: 'var(--warning)' }
           :                 { label: 'High Ω-6', color: 'var(--danger)' };
+  const hasAla = dayLogs.some(l => !EPA_DHA_SOURCES.has(l.food) && (FOODS.find(f => f.id === l.food)?.per100g?.omega3 || 0) > 0);
   const o3Sources = getTopContributors('omega3', dayLogs, 4);
   const o6Sources = getTopContributors('omega6', dayLogs, 4);
   const o3Html = o3Sources.length ? `<div class="nutrient-sources">${o3Sources.join('')}</div>` : '';
   const o6Html = o6Sources.length ? `<div class="nutrient-sources">${o6Sources.join('')}</div>` : '';
+  const alaNote = hasAla ? `<div class="omega-ala-note">⚠️ Plant Ω-3 (ALA) converted at 8% — add fish or Möller for direct EPA/DHA</div>` : '';
   return `
     <div class="card omega-ratio-card">
       <div class="omega-ratio-header">
@@ -1934,11 +1958,21 @@ function renderOmegaRatioCard(dayLogs) {
         <span class="omega-ratio-badge" style="color:${q.color}">${q.label}</span>
       </div>
       <div class="omega-ratio-row">
-        <div class="omega-item"><span class="omega-label">Ω-3</span><span class="omega-val">${formatNutrientAmt(o3,'mg')}</span>${o3Html}</div>
+        <div class="omega-item">
+          <span class="omega-label">Ω-3 effective</span>
+          <span class="omega-val">${formatNutrientAmt(o3Eff,'mg')}</span>
+          <span class="omega-raw">${formatNutrientAmt(o3Raw,'mg')} raw</span>
+          ${o3Html}
+        </div>
         <div class="omega-sep">vs</div>
-        <div class="omega-item"><span class="omega-label">Ω-6</span><span class="omega-val">${formatNutrientAmt(o6,'mg')}</span>${o6Html}</div>
+        <div class="omega-item">
+          <span class="omega-label">Ω-6</span>
+          <span class="omega-val">${formatNutrientAmt(o6,'mg')}</span>
+          ${o6Html}
+        </div>
         <div class="omega-ratio-num" style="color:${q.color}">1 : ${ratioStr}</div>
       </div>
+      ${alaNote}
       <div class="omega-ratio-note">Ω-6 : Ω-3 ratio · target ≤ 4 : 1</div>
     </div>`;
 }

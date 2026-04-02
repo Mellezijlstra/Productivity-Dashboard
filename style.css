@@ -1124,6 +1124,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .omega-ratio-num { font-size: 1.1rem; font-weight: 700; margin-left: auto; }
 .omega-raw { font-size: 0.68rem; color: var(--text-muted); }
 .omega-ala-note { font-size: 0.7rem; color: var(--warning); margin-top: 8px; }
+.bioavail-warn { font-size: 0.68rem; color: var(--warning); margin-top: 5px; line-height: 1.4; }
 .omega-ratio-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
 
 /* Protocol cards */

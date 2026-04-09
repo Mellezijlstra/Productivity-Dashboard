@@ -263,6 +263,8 @@ const FOODS = [
     per100g: { vitC:1.4,  vitA:3,   vitB6:1.35, vitB12:0,    iron:5.25, zinc:5.0,   potassium:645,  calcium:78,   iodine:0,   magnesium:325, vitD:0,    folate:227, vitK:0,     selenium:79.3, copper:1.83, manganese:1.95, choline:55.1, vitE:35.17, omega3:91,   omega6:39480 }},
   { id: 'sweetpotato',   name: 'Sweet Potato',      emoji: '🍠',
     per100g: { vitC:12.8, vitA:961, vitB6:0.3,  vitB12:0,    iron:0.74, zinc:0.32,  potassium:475,  calcium:38,   iodine:2,   magnesium:27,  vitD:0,    folate:6,   vitK:2.5,   selenium:0.6,  copper:0.16, manganese:0.26, choline:12.3, vitE:0.71,  omega3:10,   omega6:16    }},
+  { id: 'tomato',        name: 'Tomato',            emoji: '🍅',
+    per100g: { vitC:13.7, vitA:42,  vitB6:0.08, vitB12:0,    iron:0.27, zinc:0.17,  potassium:237,  calcium:10,   iodine:0,   magnesium:11,  vitD:0,    folate:15,  vitK:7.9,   selenium:0.1,  copper:0.06, manganese:0.11, choline:6.7,  vitE:0.54,  omega3:4,    omega6:82    }},
   { id: 'tuna',          name: 'Tuna',              emoji: '🐠',
     per100g: { vitC:0,    vitA:18,  vitB6:0.5,  vitB12:2.5,  iron:1.3,  zinc:0.77,  potassium:384,  calcium:11,   iodine:18,  magnesium:31,  vitD:2.3,  folate:4,   vitK:0,     selenium:90.6, copper:0.08, manganese:0.02, choline:65,   vitE:1.0,   omega3:280,  omega6:204   }},
   { id: 'walnuts',       name: 'Walnuts',           emoji: '🌰', lowBioavail: ['iron','zinc','magnesium'],
@@ -2010,6 +2012,19 @@ function shortNutrientName(n) {
   return n.name.replace('Vitamin ', 'Vit ').replace(' (B9)', '').replace('Omega-3', 'Ω-3').replace('Omega-6', 'Ω-6');
 }
 
+function omegaBadge(logs) {
+  if (!logs.length) return '';
+  const amts = getTotalNutrientAmounts(logs);
+  const o3Raw = amts.omega3 || 0;
+  const o6 = amts.omega6 || 0;
+  if (o3Raw === 0 && o6 === 0) return '';
+  const o3Eff = getEffectiveOmega3(logs);
+  const ratio = o3Eff > 0 ? o6 / o3Eff : null;
+  const ratioStr = ratio !== null ? ratio.toFixed(1) : '∞';
+  const color = ratio === null ? 'var(--danger)' : ratio <= 4 ? 'var(--micros)' : ratio <= 8 ? 'var(--warning)' : 'var(--danger)';
+  return `<span class="omega-day-badge" style="color:${color}">⚖️ 1:${ratioStr}</span>`;
+}
+
 function renderWeekDayLog() {
   const today = todayStr();
   const dow = (new Date().getDay() + 6) % 7;
@@ -2018,12 +2033,15 @@ function renderWeekDayLog() {
   const dailyNutrients = MICRONUTRIENTS.filter(n => n.cat === 'daily');
   const total = dailyNutrients.length;
 
+  let weeklyAllLogs = [];
+
   const rows = dayNames.map((name, i) => {
     const date = addDays(weekStart, i);
     if (date > today) {
       return `<div class="day-log-row future"><div class="day-log-header"><span class="day-log-name">${name}</span><span class="day-log-pct" style="color:var(--text-muted)">—</span></div></div>`;
     }
     const logs = state.microLogs.filter(l => l.date === date);
+    weeklyAllLogs = weeklyAllLogs.concat(logs);
     const amts = getTotalNutrientAmounts(logs);
     const covered = dailyNutrients.filter(n => n.rda > 0 && (amts[n.id] || 0) >= n.rda * 0.5);
     const missing  = dailyNutrients.filter(n => !(n.rda > 0 && (amts[n.id] || 0) >= n.rda * 0.5));
@@ -2034,6 +2052,7 @@ function renderWeekDayLog() {
         <div class="day-log-header">
           <span class="day-log-name">${name}</span>
           <span class="day-log-pct" style="color:${pctColor}">${pct !== null ? pct+'%' : '—'}</span>
+          ${omegaBadge(logs)}
         </div>
         ${logs.length ? `<div class="day-log-tags">
           ${covered.map(n => `<span class="day-log-tag covered">${shortNutrientName(n)}</span>`).join('')}
@@ -2042,7 +2061,47 @@ function renderWeekDayLog() {
       </div>`;
   }).join('');
 
-  return `<div class="card" style="margin-top:0"><div class="card-header"><h3>Daily Breakdown</h3></div><div class="day-log">${rows}</div></div>`;
+  const weeklyOmegaCard = renderWeeklyOmegaCard(weeklyAllLogs);
+
+  return `<div class="card" style="margin-top:0"><div class="card-header"><h3>Daily Breakdown</h3></div><div class="day-log">${rows}</div></div>${weeklyOmegaCard}`;
+}
+
+function renderWeeklyOmegaCard(allLogs) {
+  if (!allLogs.length) return '';
+  const amts = getTotalNutrientAmounts(allLogs);
+  const o3Raw = amts.omega3 || 0;
+  const o6 = amts.omega6 || 0;
+  if (o3Raw === 0 && o6 === 0) return '';
+  const o3Eff = getEffectiveOmega3(allLogs);
+  const ratioNum = o3Eff > 0 ? o6 / o3Eff : Infinity;
+  const ratioStr = o3Eff > 0 ? ratioNum.toFixed(1) : '∞';
+  const q = ratioNum <= 4 ? { label: 'Optimal', color: 'var(--micros)' }
+          : ratioNum <= 8 ? { label: 'Moderate', color: 'var(--warning)' }
+          :                 { label: 'High Ω-6', color: 'var(--danger)' };
+  const hasAla = allLogs.some(l => !EPA_DHA_SOURCES.has(l.food) && (FOODS.find(f => f.id === l.food)?.per100g?.omega3 || 0) > 0);
+  const alaNote = hasAla ? `<div class="omega-ala-note">⚠️ Plant Ω-3 (ALA) converted at 8% — add fish or Möller for direct EPA/DHA</div>` : '';
+  return `
+    <div class="card omega-ratio-card" style="margin-top:0">
+      <div class="omega-ratio-header">
+        <span class="omega-ratio-title">⚖️ Weekly Omega Balance</span>
+        <span class="omega-ratio-badge" style="color:${q.color}">${q.label}</span>
+      </div>
+      <div class="omega-ratio-row">
+        <div class="omega-item">
+          <span class="omega-label">Ω-3 effective</span>
+          <span class="omega-val">${formatNutrientAmt(o3Eff,'mg')}</span>
+          <span class="omega-raw">${formatNutrientAmt(o3Raw,'mg')} raw</span>
+        </div>
+        <div class="omega-sep">vs</div>
+        <div class="omega-item">
+          <span class="omega-label">Ω-6</span>
+          <span class="omega-val">${formatNutrientAmt(o6,'mg')}</span>
+        </div>
+        <div class="omega-ratio-num" style="color:${q.color}">1 : ${ratioStr}</div>
+      </div>
+      ${alaNote}
+      <div class="omega-ratio-note">Cumulative Ω-6 : Ω-3 this week · target ≤ 4 : 1</div>
+    </div>`;
 }
 
 function getWeeklyNutrientCoverage() {

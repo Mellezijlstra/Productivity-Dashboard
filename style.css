@@ -942,6 +942,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all va
 .day-log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .day-log-name { font-size: 0.82rem; font-weight: 600; color: var(--text-dim); }
 .day-log-pct { font-size: 0.85rem; font-weight: 700; }
+.omega-day-badge { font-size: 0.72rem; font-weight: 600; padding-left: 10px; }
 .day-log-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .day-log-tag { font-size: 0.68rem; padding: 2px 8px; border-radius: 10px; }
 .day-log-tag.covered { background: var(--micros-dim); color: var(--micros-light); }
